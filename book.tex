@@ -755,9 +755,9 @@ The following is the class definition for
 constants (aka literals\index{subject}{literals})
 from the Python \code{ast} module.
 \begin{lstlisting}
+   @dataclass
    class Constant:
-     def __init__(self, value):
-       self.value = value
+     value : Any
 \end{lstlisting}
 An integer constant node includes just one thing: the integer value.
 To create an AST node for the integer $8$, we write \INT{8}.
@@ -769,10 +769,10 @@ We say that the value created by \INT{8} is an
 
 The following is the class definition for unary operators.
 \begin{lstlisting}
+   @dataclass
    class UnaryOp:
-     def __init__(self, op, operand):
-       self.op = op
-       self.operand = operand
+     op : UOp
+     operand : exp
 \end{lstlisting}
 The specific operation is specified by the \code{op} parameter.  For
 example, the class \code{USub} is for unary subtraction.
@@ -785,14 +785,14 @@ negates the number $8$, we write the following.
 The call to the \code{input\_int} function is represented by the
 \code{Call} and \code{Name} classes.
 \begin{lstlisting}
+   @dataclass
    class Call:
-     def __init__(self, func, args):
-       self.func = func
-       self.args = args
+     func : exp
+     args : list[exp]
 
+   @dataclass
    class Name:
-     def __init__(self, id):        
-       self.id = id
+     id : str
 \end{lstlisting}
 To create an AST node that calls \code{input\_int}, we write
 \begin{lstlisting}
@@ -802,11 +802,11 @@ To create an AST node that calls \code{input\_int}, we write
 Finally, to represent the addition in \eqref{eq:arith-prog}, we use
 the \code{BinOp} class for binary operators.
 \begin{lstlisting}
+   @dataclass
    class BinOp:
-     def __init__(self, left, op, right):
-       self.op = op
-       self.left = left
-       self.right = right
+     op : BOp
+     left : exp
+     right : exp
 \end{lstlisting}
 Similar to \code{UnaryOp}, the specific operation is specified by the
 \code{op} parameter, which for now is just an instance of the
@@ -981,9 +981,9 @@ this case a list of statements.
 %
 The \code{Module} class is defined as follows:
 \begin{lstlisting}
+@dataclass
 class Module:
-    def __init__(self, body):
-        self.body = body
+    body : list[stmt]
 \end{lstlisting}
 where \code{body} is a list of statements.
 \fi}
@@ -1472,7 +1472,7 @@ figure~\ref{fig:interp_Lint}.
 \fi}
 {\if\edition\pythonEd\pythonColor
 \begin{lstlisting}
-def interp_exp(e):
+def interp_exp(e : exp):
     match e:
         case BinOp(left, Add(), right):
             l = interp_exp(left); r = interp_exp(right)
@@ -1487,14 +1487,14 @@ def interp_exp(e):
         case Call(Name('input_int'), []):
             return input_int()
 
-def interp_stmt(s):
+def interp_stmt(s : stmt):
     match s:
         case Expr(Call(Name('print'), [arg])):
             print(interp_exp(arg))
         case Expr(value):
             interp_exp(value)
 
-def interp_Lint(p):
+def interp_Lint(p : Module):
     match p:
         case Module(body):
             for s in body:
