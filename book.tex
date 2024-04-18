@@ -28,6 +28,15 @@
 \def\pythonEd{1}
 \def\edition{1}
 
+\def\xeightysixEd{0}
+\def\riscvEd{1}
+\def\architecture{1}
+
+\newcommand\ifriscv[1]{\if\architecture\riscvEd{#1}\fi}
+\newcommand\ifxeightsix[1]{\if\architecture\xeightysixEd{#1}\fi}
+\newenvironment{riscv}{\if\architecture\riscvEd}{\fi}
+\newenvironment{xeightysix}{\if\architecture\xeightysixEd}{\fi}
+
 % material that is specific to the Racket edition of the book
 \newcommand{\racket}[1]{{\if\edition\racketEd{#1}\fi}}
 % would like a command for: \if\edition\racketEd\color{olive}
@@ -472,9 +481,9 @@ the following location:
   https://github.com/IUCompilerCourse/
 \end{center}
 
-The compiler targets x86 assembly language~\citep{Intel:2015aa}, so it
+The compiler targets {\ArchName} assembly language~\citep{Intel:2015aa}, so it
 is helpful but not necessary for the reader to have taken a computer
-systems course~\citep{Bryant:2010aa}. We introduce the parts of x86-64
+systems course~\citep{Bryant:2010aa}. We introduce the parts of {\ArchName}-64
 assembly language that are needed in the compiler.
 %
 We follow the System V calling
@@ -1820,20 +1829,20 @@ appendix~\ref{appendix:utilities}.\\
 \setcounter{footnote}{0}
 
 This chapter covers compiling a subset of
-\racket{Racket}\python{Python} to x86-64 assembly
+\racket{Racket}\python{Python} to {\ArchName}-64 assembly
 code~\citep{Intel:2015aa}. The subset, named \LangVar{}, includes
-integer arithmetic and local variables.  We often refer to x86-64
-simply as x86.  The chapter first describes the \LangVar{} language
-(section~\ref{sec:s0}) and then introduces x86 assembly
-(section~\ref{sec:x86}). Because x86 assembly language is large, we
+integer arithmetic and local variables.  We often refer to {\ArchName}-64
+simply as {\ArchName}.  The chapter first describes the \LangVar{} language
+(section~\ref{sec:s0}) and then introduces {\ArchName} assembly
+(section~\ref{sec:x86}). Because {\ArchName} assembly language is large, we
 discuss only the instructions needed for compiling \LangVar{}. We
-introduce more x86 instructions in subsequent chapters.  After
-introducing \LangVar{} and x86, we reflect on their differences and
-create a plan to break down the translation from \LangVar{} to x86
+introduce more {\ArchName} instructions in subsequent chapters.  After
+introducing \LangVar{} and {\ArchName}, we reflect on their differences and
+create a plan to break down the translation from \LangVar{} to {\ArchName}
 into a handful of steps (section~\ref{sec:plan-s0-x86}).  The rest of
 the chapter gives detailed hints regarding each step.  We aim to give
 enough hints that the well-prepared reader, together with a few
-friends, can implement a compiler from \LangVar{} to x86 in a short
+friends, can implement a compiler from \LangVar{} to {\ArchName} in a short
 time.  To suggest the scale of this first compiler, we note that the
 instructor solution for the \LangVar{} compiler is approximately
 \racket{500}\python{300} lines of code.
@@ -2439,7 +2448,7 @@ def interp_Lvar(p):
 \fi}
 
 The goal for this chapter is to implement a compiler that translates
-any program $P_1$ written in the \LangVar{} language into an x86 assembly
+any program $P_1$ written in the \LangVar{} language into an {\ArchName} assembly
 program $P_2$ such that $P_2$ exhibits the same behavior when run on a
 computer as the $P_1$ program interpreted by \code{interp\_Lvar}.
 That is, they output the same integer $n$. We depict this correctness
@@ -2455,7 +2464,7 @@ criteria in the following diagram:
  \path[->] (p2) edge [right] node {\footnotesize\code{interp\_x86int}} (o);
 \end{tikzpicture}
 \]
-Next we introduce the \LangXInt{} subset of x86 that suffices for
+Next we introduce the \LangXInt{} subset of {\ArchName} that suffices for
 compiling \LangVar{}.
 
 \section{The \LangXInt{} Assembly Language}
@@ -2463,30 +2472,37 @@ compiling \LangVar{}.
 \index{subject}{x86}
 
 Figure~\ref{fig:x86-int-concrete} defines the concrete syntax for
-\LangXInt{}.  We use the AT\&T syntax expected by the GNU
+\LangXInt{}.  We use the \ifxeightsix{AT\&T} syntax expected by the GNU
 assembler.
 %
 A program begins with a \code{main} label followed by a sequence of
 instructions. The \key{globl} directive makes the \key{main} procedure
 externally visible so that the operating system can call it.
 %
-An x86 program is stored in the computer's memory.  For our purposes,
+An {\ArchName} program is stored in the computer's memory.  For our purposes,
 the computer's memory is a mapping of 64-bit addresses to 64-bit
 values.  The computer has a \emph{program counter}
-(PC)\index{subject}{program counter}\index{subject}{PC} stored in the
-\code{rip} register that points to the address of the next instruction
+(PC)\index{subject}{program counter}\index{subject}{PC}
+stored in the \ifxeightsix{\code{rip}}\ifriscv{\code{pc}} register that points to the address of the next instruction
 to be executed.  For most instructions, the program counter is
 incremented after the instruction is executed so that it points to the
-next instruction in memory. Most x86 instructions take two operands,
-each of which is an integer constant (called an \emph{immediate
+next instruction in memory. Most {\ArchName} instructions take \ifxeightsix{two}\ifriscv{three} operands,
+each of which can be an integer constant (called an \emph{immediate
   value}\index{subject}{immediate value}), a
 \emph{register}\index{subject}{register}, or a memory location.
 
+\if\architecture\xeightysixEd
 \newcommand{\allregisters}{\key{rsp} \MID \key{rbp} \MID \key{rax} \MID \key{rbx} \MID \key{rcx}
               \MID \key{rdx} \MID \key{rsi} \MID \key{rdi} \MID \\
               && \key{r8} \MID \key{r9} \MID \key{r10}
               \MID \key{r11} \MID \key{r12} \MID \key{r13}
-              \MID \key{r14} \MID \key{r15}}
+              \MID \key{r14} \MIDn \key{r15}}
+\fi
+\if\architecture\riscvEd
+\newcommand{\allregisters}{\key{sp} \MID \key{fp} \MID \key{ra} \MID
+  \key{zero} \MID \key{pc} \MID \\
+  && \key{a0} - \key{a7} \MID \key{s2} - \key{s11} \MID \key{t0} - \key{t6}}
+\fi
 
 \newcommand{\GrammarXInt}{
 \begin{array}{rcl}
@@ -2517,6 +2533,7 @@ each of which is an integer constant (called an \emph{immediate
 \]
 \fi}
 {\if\edition\pythonEd\pythonColor
+\if\architecture\xeightysixEd
 \[
 \begin{array}{lcl}
 \Reg &::=& \allregisters{} \\
@@ -2530,62 +2547,113 @@ each of which is an integer constant (called an \emph{immediate
       &    & \key{main:} \; \Instr^{*}
 \end{array}
 \]
+\fi
+\if\architecture\riscvEd
+\[
+\begin{array}{lcl}
+\Reg &::=& \allregisters{} \\
+% \Arg &::=&  \key{\$}\Int \MID \key{\%}\Reg \MID \Int\key{(}\key{\%}\Reg\key{)}\\
+  \Instr &::=&
+               \key{add} \; \Reg\key{,} \Reg\key{,} \Reg \MID
+               \key{addi} \; \Reg\key{,} \Reg\key{,} \Int \MID
+               \key{sub}  \; \Reg\key{,} \Reg\key{,} \Reg \MID \\ &&
+               \key{neg}  \; \Reg\key{,} \Reg \MID
+               \key{mv} \; \Reg\key{,} \Reg \MID
+               \key{li} \; \Reg\key{,} \Int \MID
+  \\
+  &&  \key{call} \; \mathit{label} \MID
+     \key{sd}\;\Reg\key{,}\Int\key{(}\Reg\key{)} \MID
+     \key{ld}\;\Reg\key{,}\Int\key{(}\Reg\key{)} \MID \key{ret} \\
+\LangXIntM{} &::= & \key{.globl main}\\
+      &    & \key{main:} \; \Instr^{*}
+\end{array}
+\]
+\fi
 \fi}
 \end{tcolorbox}
-\caption{The syntax of the \LangXInt{} assembly language (AT\&T syntax).}
+\caption{The syntax of the \LangXInt{} assembly language\ifxeightsix{ (AT\&T syntax)}.}
 \label{fig:x86-int-concrete}
 \index{subject}{x86int@\LangXInt{} concrete syntax}
 \end{figure}
 
 A register is a special kind of variable that holds a 64-bit
-value. There are 16 general-purpose registers in the computer; their
-names are given in figure~\ref{fig:x86-int-concrete}.  A register is
+value. There are \ifxeightsix{16}\ifriscv{32} general-purpose registers in the computer; their
+names are given in figure~\ref{fig:x86-int-concrete}. \ifriscv{They
+  also have generic names \code{x0} - \code{x31}.}  A register is
+\ifriscv{simply referenced by its name.}\ifxeightsix{
 written with a percent sign, \key{\%}, followed by its name,
-for example, \key{\%rax}.
+for example, \key{\%rax}.}
 
-An immediate value is written using the notation \key{\$}$n$ where $n$
+An immediate value is written using the notation \ifxeightsix{\key{\$}}$n$ where $n$
 is an integer.
 %
 %
-An access to memory is specified using the syntax $n(\key{\%}r)$,
-which obtains the address stored in register $r$ and then adds $n$
-bytes to the address. The resulting address is used to load or to store
+An access to memory is specified using the syntax \ifxeightsix{$n(\key{\%}r)$}\ifriscv{$n(r)$},
+which obtains the address stored in register $r$ and then adds an
+offset of $n$ bytes
+to the address. The resulting address is used to load or to store
 to memory depending on whether it occurs as a source or destination
 argument of an instruction.
 
-An arithmetic instruction such as $\key{addq}\,s\key{,}\,d$ reads from
-the source $s$ and destination $d$, applies the arithmetic operation,
-and then writes the result to the destination $d$. \index{subject}{instruction}
+\if\architecture\xeightysixEd
+  An arithmetic instruction such as $\key{addq}\,s\key{,}\,d$ reads
+  from the source $s$ and destination $d$, applies the arithmetic
+  operation, and then writes the result to the destination
+  $d$.\index{subject}{instruction}
+\fi
+\if\architecture\riscvEd
+  An arithmetic instruction such as $\key{add}\,d\key{,}s_1\key{,}s_2$ reads from
+  the source registers $s_1$ and $s_2$, applies the arithmetic
+  operation, and then writes the result to the destination register
+  $d$.
+  Some instructions come with an immediate version like
+  $\key{addi}\,d\key{,}s\key{,}n$, which adds the number $n$ to the source
+  register $s$ and writes the result to the destination register $d$.
+\fi
 %
-The move instruction $\key{movq}\,s\key{,}\,d$ reads from $s$ and
-stores the result in $d$.
+\if\architecture\xeightysixEd
+  The move instruction $\key{movq}\,s\key{,}\,d$ reads from $s$ and
+  stores the result in $d$.
+\fi
+\if\architecture\riscvEd
+  The move instruction $\key{mv}\,d\key{,}s$ reads from register $s$ and
+  stores the result in register $d$.
+\fi
 %
-The $\key{callq}\,\itm{label}$ instruction jumps to the procedure
-specified by the label, and $\key{retq}$ returns from a procedure to
-its caller. 
+The \ifxeightsix{$\key{callq}\,\itm{label}$}\ifriscv{$\key{call}\,\itm{label}$} instruction jumps to the procedure
+specified by the \itm{label}, and \ifxeightsix{$\key{retq}$}\ifriscv{$\key{ret}$} returns from a procedure to
+its caller.
 %
 We discuss procedure calls in more detail further in this chapter and
 in chapter~\ref{ch:Lfun}.
 %
+\if\architecture\xeightysixEd
 The last letter \key{q} indicates that these instructions operate on
 quadwords, which are 64-bit values.
+\fi
 %
 \racket{The instruction $\key{jmp}\,\itm{label}$ updates the program
   counter to the address of the instruction immediately after the
   specified label.}
 
 Appendix~\ref{sec:x86-quick-reference} contains a reference for
-all the x86 instructions used in this book.
+all the {\ArchName} instructions used in this book.
 
-Figure~\ref{fig:p0-x86} depicts an x86 program that computes
+Figure~\ref{fig:p0-x86} depicts an {\ArchName} program that computes
 \racket{\code{(+ 10 32)}}\python{10 + 32}. The instruction
-\lstinline{movq $10, %rax}
-puts $10$ into register \key{rax}, and then \lstinline{addq $32, %rax}
-adds $32$ to the $10$ in \key{rax} and
-puts the result, $42$, into \key{rax}.
+\if\architecture\xeightysixEd\lstinline{movq $10, %rax}
+\fi
+\ifriscv{\lstinline{li a0, 10}}
+puts $10$ into register \ifxeightsix{\key{rax}}\ifriscv{\key{a0}}, and
+then
+\if\architecture\xeightysixEd\lstinline{addq $32, %rax}
+\fi
+\ifriscv{\lstinline{addi a0, a0, 32}}
+adds $32$ to the $10$ in \ifxeightsix{\key{rax}}\ifriscv{\key{a0}} and
+puts the result, $42$, into \ifxeightsix{\key{rax}}\ifriscv{\key{a0}}.
 %
-The last instruction \key{retq} finishes the \key{main} function by
-returning the integer in \key{rax} to the operating system. The
+The last instruction \ifxeightsix{\key{retq}}\ifriscv{\key{ret}} finishes the \key{main} function by
+returning the integer in \ifxeightsix{\key{rax}}\ifriscv{\key{a0}} to the operating system. The
 operating system interprets this integer as the program's exit
 code. By convention, an exit code of 0 indicates that a program has
 completed successfully, and all other exit codes indicate various
@@ -2597,6 +2665,7 @@ errors.
 \begin{figure}[tbp]
 \begin{minipage}{0.45\textwidth}
 \begin{tcolorbox}[colback=white]
+\if\architecture\xeightysixEd
 \begin{lstlisting}
     .globl main
 main:
@@ -2604,23 +2673,34 @@ main:
     addq $32, %rax
     retq
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+    .globl main
+main:
+    li a0, 10
+    addi a0, a0, 32
+    ret
+\end{lstlisting}
+\fi
 \end{tcolorbox}
 \end{minipage}
 
-\caption{An x86 program that computes
+\caption{An {\ArchName} program that computes
   \racket{\code{(+ 10 32)}}\python{10 + 32}.}
 \label{fig:p0-x86}
 \end{figure}
 
 We exhibit the use of memory for storing intermediate results in the
-next example.  Figure~\ref{fig:p1-x86} lists an x86 program that
+next example.  Figure~\ref{fig:p1-x86} lists an {\ArchName} program that
 computes \racket{\code{(+ 52 (- 10))}}\python{52 + -10}. This program
 uses a region of memory called the \emph{procedure call stack}
 (\emph{stack} for
 short). \index{subject}{stack}\index{subject}{procedure call stack}
 The stack consists of a separate \emph{frame}\index{subject}{frame}
 for each procedure call. The memory layout for an individual frame is
-shown in figure~\ref{fig:frame}.  The register \key{rsp} is called the
+shown in figure~\ref{fig:frame}.  The register
+\ifxeightsix{\key{rsp}}\ifriscv{\key{sp}} is called the 
 \emph{stack pointer}\index{subject}{stack pointer} and contains the
 address of the item at the top of the stack.  In general, we use the
 term \emph{pointer}\index{subject}{pointer} for something that
@@ -2629,16 +2709,19 @@ increase the size of the stack by subtracting from the stack pointer.
 In the context of a procedure call, the \emph{return
   address}\index{subject}{return address} is the location of the
 instruction that immediately follows the call instruction on the
-caller side.  The function call instruction, \code{callq}, pushes the
+caller side.  The function call instruction,
+\ifxeightsix{\code{callq}}\ifriscv{\code{call}}, pushes the 
 return address onto the stack prior to jumping to the procedure.  The
-register \key{rbp} is the \emph{base pointer}\index{subject}{base
+register \ifxeightsix{\key{rbp}}\ifriscv{\key{fp}} is the \emph{\ifxeightsix{base}\ifriscv{frame} pointer}\index{subject}{base
   pointer} and is used to access variables that are stored in the
-frame of the current procedure call.  The base pointer of the caller
+frame of the current procedure call.  The \ifxeightsix{base}\ifriscv{frame} pointer of the caller
 is stored immediately after the return address.
 Figure~\ref{fig:frame} shows the memory layout of a frame with storage
 for $n$ variables, which are numbered from $1$ to $n$. Variable $1$ is
-stored at address $-8\key{(\%rbp)}$, variable $2$ at
-$-16\key{(\%rbp)}$, and so on.
+stored at address
+\ifxeightsix{$-8\key{(\%rbp)}$}\ifriscv{$-16(\key{fp})$},
+variable $2$ at
+\ifxeightsix{$-16\key{(\%rbp)}$}\ifriscv{$-24(\key{fp})$}, and so on.
 
 \begin{figure}[tbp]
   \begin{minipage}{0.66\textwidth}
@@ -2665,6 +2748,7 @@ conclusion:
 \end{lstlisting}
 \fi}
 {\if\edition\pythonEd\pythonColor
+\if\architecture\xeightysixEd
 \begin{lstlisting}
     .globl main
 main:
@@ -2679,10 +2763,28 @@ main:
     popq	%rbp
     retq
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+    .globl main
+main:
+    addi    sp, sp,-32
+    sd      ra, 24(sp)
+    sd      fp, 16(sp)
+    addi    fp, sp, 32
+    li      a0, 52
+    li      a1, 10
+    sub     a0, a0, a1
+    ld      ra, 24(sp)
+    ld      fp, 16(sp)
+    addi    sp, sp, 32
+    ret
+\end{lstlisting}
+\fi
 \fi}
   \end{tcolorbox}
   \end{minipage}
-  \caption{An x86 program that computes
+  \caption{An {\ArchName} program that computes
   \racket{\code{(+ 52 (- 10))}}\python{52 + -10}.}
 \label{fig:p1-x86}
 \end{figure}
@@ -2691,7 +2793,8 @@ main:
 \begin{figure}[tbp]
 \begin{minipage}{0.66\textwidth}
 \begin{tcolorbox}[colback=white]
-\centering
+  \centering
+  \if\architecture\xeightysixEd
 \begin{tabular}{|r|l|} \hline
 Position & Contents \\ \hline
 $8$(\key{\%rbp}) & return address \\
@@ -2701,6 +2804,18 @@ $-16$(\key{\%rbp}) & variable $2$ \\
  \ldots  & \ldots \\
 $0$(\key{\%rsp}) & variable $n$\\ \hline
 \end{tabular}
+\fi
+\if\architecture\riscvEd
+\begin{tabular}{|r|l|} \hline
+Position & Contents \\ \hline
+$-8$(\key{fp}) & return address \\
+$-16$(\key{fp}) & old \key{fp} \\
+$-24$(\key{fp}) & variable $1$ \\
+$-32$(\key{fp}) & variable $2$ \\
+ \ldots  & \ldots \\
+$0$(\key{sp}) & variable $n$\\ \hline
+\end{tabular}
+\fi
 \end{tcolorbox}
 \end{minipage}
 \caption{Memory layout of a frame.}
@@ -2709,31 +2824,50 @@ $0$(\key{\%rsp}) & variable $n$\\ \hline
 
 In the program shown in figure~\ref{fig:p1-x86}, consider how control
 is transferred from the operating system to the \code{main} function.
-The operating system issues a \code{callq main} instruction that
-pushes its return address on the stack and then jumps to
-\code{main}. In x86-64, the stack pointer \code{rsp} must be divisible
-by 16 bytes prior to the execution of any \code{callq} instruction, so
-that when control arrives at \code{main}, the \code{rsp} is 8 bytes
+The operating system issues a \ifxeightsix{\code{callq
+    main}}\ifriscv{\code{call main}} instruction that
+\ifxeightsix{pushes its return address on the stack}
+\ifriscv{stores the return address in register \key{ra}} and then jumps to
+\code{main}. In {\ArchName}, the stack pointer \ifxeightsix{\code{rsp}}\ifriscv{\code{sp}} must be divisible
+by 16 bytes prior to the execution of any \ifxeightsix{\code{callq}}\ifriscv{\code{call}} instruction.
+\if\architecture\xeightysixEd
+That is when control arrives at \code{main}, the \code{rsp} is 8 bytes
 out of alignment (because the \code{callq} pushed the return address).
-The first three instructions are the typical
-\emph{prelude}\index{subject}{prelude} for a procedure.  The
-instruction \code{pushq \%rbp} first subtracts $8$ from the stack
+\fi
+The first \ifxeightsix{three}\ifriscv{four} instructions are the typical
+\emph{prelude}\index{subject}{prelude} for a procedure.
+\if\architecture\xeightysixEd
+The instruction \code{pushq \%rbp} first subtracts $8$ from the stack
 pointer \code{rsp} and then saves the base pointer of the caller at
 address \code{rsp} on the stack. The next instruction \code{movq
   \%rsp, \%rbp} sets the base pointer to the current stack pointer,
 which is pointing to the location of the old base pointer. The
 instruction \code{subq \$16, \%rsp} moves the stack pointer down to
-make enough room for storing variables.  This program needs one
+make enough room for storing variables.
+This program needs one
 variable ($8$ bytes), but we round up to 16 bytes so that \code{rsp} is
 16-byte-aligned, and then we are ready to make calls to other functions.
 \racket{The last instruction of the prelude is \code{jmp start}, which
   transfers control to the instructions that were generated from the
   expression \racket{\code{(+ 52 (- 10))}}\python{52 + -10}.}
+\fi
+\if\architecture\riscvEd
+The instruction \code{addi sp, sp,-32} first subtracts $32$ from the stack
+pointer \code{sp} to make room for a stack frame that can
+accommodate two variables. The next instruction \code{sd ra, 24(sp)}
+saves the return address at the top of the stack frame. The subsequent
+instruction \code{sd fp, 16(sp)} saves the previous frame pointer
+right below. The final instruction 
+\code{addi fp, sp, 32} sets the frame pointer on top of the return
+address. This place is advantageous as it makes \key{fp} point to the
+arguments of the caller, as we will see.
+\fi
 
 \racket{The first instruction under the \code{start} label is}
 %
 \python{The first instruction after the prelude is}
 %
+\if\architecture\xeightysixEd
 \code{movq \$10, -8(\%rbp)}, which stores $10$ in variable $1$.
 %
 The instruction \code{negq -8(\%rbp)} changes the contents of variable
@@ -2742,13 +2876,24 @@ $1$ to $-10$.
 The next instruction moves the $-10$ from variable $1$ into the
 \code{rax} register.  Finally, \code{addq \$52, \%rax} adds $52$ to
 the value in \code{rax}, updating its contents to $42$.
+\fi
+\if\architecture\riscvEd
+\code{li a0, 52} which loads $52$ into register \key{a0}.
+The next instruction \code{li a1, 10} load $10$ into register
+\key{a1}.
+Finally, \code{sub a0, a0, a1} replaces the value in \key{a0} with
+$52-10=42$.
+The caller of the function expects the return value in \key{a0}, so
+that no further adjustment is required.
+\fi
 
 \racket{The three instructions under the label \code{conclusion} are the
   typical \emph{conclusion}\index{subject}{conclusion} of a procedure.}
 %
 \python{The \emph{conclusion}\index{subject}{conclusion} of the
-  \code{main} function consists of the last three instructions.}
+  \code{main} function consists of the last \ifxeightsix{three}\ifriscv{four} instructions.}
 %
+\if\architecture\xeightysixEd
 The first two restore the \code{rsp} and \code{rbp} registers to their
 states at the beginning of the procedure. In particular,
 \key{addq \$16, \%rsp} moves the stack pointer to point to the
@@ -2756,9 +2901,16 @@ old base pointer. Then \key{popq \%rbp} restores the old base pointer
 to \key{rbp} and adds $8$ to the stack pointer.  The last instruction,
 \key{retq}, jumps back to the procedure that called this one and adds
 $8$ to the stack pointer.
+\fi
+\if\architecture\riscvEd
+The first two instruction restore the return address to  \key{ra} and
+the saved frame pointer to \key{fp}. The instruction \code{add sp, sp,
+32} restores the stack pointer to its value on entry to the
+function. The last instruction \code{ret} jumps back to the caller.
+\fi
 
-Our compiler needs a convenient representation for manipulating x86
-programs, so we define an abstract syntax for x86, shown in
+Our compiler needs a convenient representation for manipulating {\ArchName}
+programs, so we define an abstract syntax for {\ArchName}, shown in
 figure~\ref{fig:x86-int-ast}. We refer to this language as
 \LangXInt{}.
 %
@@ -2768,11 +2920,11 @@ figure~\ref{fig:x86-int-ast}. We refer to this language as
   names, and register names are explicitly represented by strings. 
 \fi} %
 {\if\edition\racketEd  
-The main difference between this and the concrete syntax of \LangXInt{}
+The main difference between this language and the concrete syntax of \LangXInt{}
 (figure~\ref{fig:x86-int-concrete}) is that labels are not allowed in
 front of every instruction. Instead instructions are grouped into
 \emph{basic blocks}\index{subject}{basic block} with a
-label associated with every basic block; this is why the \key{X86Program}
+label associated with every basic block; this is why the \key{{\ARCHNAME}Program}
 struct includes an alist mapping labels to basic blocks. The reason for this
 organization becomes apparent in chapter~\ref{ch:Lif} when we
 introduce conditional branching. The \code{Block} structure includes
@@ -2781,17 +2933,25 @@ useful in chapter~\ref{ch:register-allocation-Lvar}.  For now, the
 $\itm{info}$ field should contain an empty list.
 \fi}
 %
-Regarding the abstract syntax for \code{callq}, the \code{Callq} AST
+Regarding the abstract syntax for
+\ifxeightsix{\code{callq}}\ifriscv{\code{call}}, the
+\ifxeightsix{\code{Callq}}\ifriscv{\code{Call}} AST 
 node includes an integer for representing the arity of the function,
 that is, the number of arguments, which is helpful to know during
 register allocation (chapter~\ref{ch:register-allocation-Lvar}).
 
+\if\architecture\xeightysixEd
 \newcommand{\allastregisters}{\skey{rsp} \MID \skey{rbp} \MID \skey{rax} \MID \skey{rbx} \MID \skey{rcx}
               \MID \skey{rdx} \MID \skey{rsi} \MID \skey{rdi} \MID \\
               && \skey{r8} \MID \skey{r9} \MID \skey{r10}
               \MID \skey{r11} \MID \skey{r12} \MID \skey{r13}
               \MID \skey{r14} \MID \skey{r15}}
-
+\fi
+\if\architecture\riscvEd
+\newcommand{\allastregisters}{\skey{sp} \MID \skey{fp} \MID \skey{ra} \MID \skey{zero} \MID \skey{pc}
+              \MID \skey{a0} - \skey{a7} \MID \skey{s1} \MID \\
+              && \skey{s2} - \skey{s11} \MID \skey{t0} - \skey{t6}}
+\fi
 
 \newcommand{\ASTXIntRacket}{
 \begin{array}{lcl}
@@ -2810,6 +2970,7 @@ register allocation (chapter~\ref{ch:register-allocation-Lvar}).
 \Block &::= & \BLOCK{\itm{info}}{\LP\Instr\ldots\RP} 
 \end{array}
 }
+\if\architecture\xeightysixEd
 \newcommand{\ASTXIntPython}{
 \begin{array}{lcl}
 \Reg &::=& \allregisters{} \\
@@ -2827,6 +2988,26 @@ register allocation (chapter~\ref{ch:register-allocation-Lvar}).
 \Block &::= & \Instr^{+} 
 \end{array}
 }
+\fi
+\if\architecture\riscvEd
+\newcommand{\ASTXIntPython}{
+\begin{array}{lcl}
+\Reg &::=& \allregisters{} \\
+\Arg &::=&  \IMM{\Int} \MID \REG{\Reg}
+   \MID \DEREF{\Reg}{\Int} \\
+\Instr &::=& \TERINSTR{\skey{add}}{\Reg}{\Reg}{\Reg} 
+       \MID \BININSTR{\skey{subq}}{\Arg}{\Arg}\\
+       &\MID& \UNIINSTR{\skey{negq}}{\Arg}
+       \MID \BININSTR{\skey{movq}}{\Arg}{\Arg}\\
+       &\MID& \PUSHQ{\Arg}
+       \MID \POPQ{\Arg} \\
+      &\MID& \CALLQ{\itm{label}}{\itm{int}}
+       \MID \RETQ{}
+       \MID \JMP{\itm{label}}  \\
+\Block &::= & \Instr^{+} 
+\end{array}
+}
+\fi
 
 
 \begin{figure}[tp]
@@ -2848,58 +3029,70 @@ register allocation (chapter~\ref{ch:register-allocation-Lvar}).
 \Reg &::=& \allastregisters{} \\
 \Arg &::=&  \IMM{\Int} \MID \REG{\Reg}
    \MID \DEREF{\Reg}{\Int} \\
-\Instr &::=& \BININSTR{\scode{addq}}{\Arg}{\Arg} 
-       \MID \BININSTR{\scode{subq}}{\Arg}{\Arg} \\
-       &\MID& \BININSTR{\scode{movq}}{\Arg}{\Arg}
-       \MID \UNIINSTR{\scode{negq}}{\Arg}\\
-       &\MID&  \PUSHQ{\Arg} \MID \POPQ{\Arg} \\
+  \Instr &::=& \TERINSTR{\scode{add}}{\Reg}{\Reg}{\Reg}
+               \MID \TERINSTR{\scode{sub}}{\Reg}{\Reg}{\Reg} \\
+     &\MID& \TERINSTR{\scode{addi}}{\Reg}{\Reg}{\Int} 
+            \MID \BININSTR{\scode{neg}}{\Reg}{\Reg} \\
+            &\MID& \BININSTR{\scode{mv}}{\Reg}{\Reg}
+            \MID \BININSTR{\scode{li}}{\Reg}{\Int} \\
+       &\MID& \BININSTR{\scode{sd}}{\Reg}{\DEREF{\Reg}{\Int}} \MID \BININSTR{\scode{ld}}{\Reg}{\DEREF{\Reg}{\Int}} \\
        &\MID& \CALLQ{\itm{label}}{\itm{int}} \MID \RETQ{}  \MID \JMP{\itm{label}} \\
 \LangXIntM{} &::= & \XPROGRAM{}{\Instr^{*}}{}
 \end{array}
 \]
 \fi}
 \end{tcolorbox}
-\caption{The abstract syntax of \LangXInt{} assembly.}
+\caption{The abstract syntax of \LangXInt{} assembly.\ifriscv{CONSTRUCTION}}
 \label{fig:x86-int-ast}
 \index{subject}{x86int@\LangXInt{} abstract syntax}
 \end{figure}
 
-\section{Planning the Trip to x86}
+\section{Planning the Trip to {\ArchName}}
 \label{sec:plan-s0-x86}
 
 To compile one language to another, it helps to focus on the
 differences between the two languages because the compiler will need
 to bridge those differences. What are the differences between \LangVar{}
-and x86 assembly? Here are some of the most important ones:
+and {\ArchName} assembly? Here are some of the most important ones:
 
 \begin{enumerate}
-\item x86 arithmetic instructions typically have two arguments and
+\item
+\if\architecture\xeightysixEd
+  {\ArchName} arithmetic instructions typically have two arguments and
   update the second argument in place. In contrast, \LangVar{}
   arithmetic operations take two arguments and produce a new value.
-  An x86 instruction may have at most one memory-accessing argument.
-  Furthermore, some x86 instructions place special restrictions on
+  An {\ArchName} instruction may have at most one memory-accessing argument.
+  Furthermore, some {\ArchName} instructions place special restrictions on
   their arguments.
+\fi
+\if\architecture\riscvEd
+  {\ArchName} arithmetic instructions have three register arguments,
+  the first one being the destination register. In contrast, \LangVar{}
+  arithmetic operations take two arguments and produce a new value.
+  An {\ArchName} arithmetic instruction cannot have a memory-accessing
+  argument. Such an argument has to be loaded into a register, first.
+\fi
 
 \item An argument of an \LangVar{} operator can be a deeply nested
-  expression, whereas x86 instructions restrict their arguments to be
+  expression, whereas {\ArchName} instructions restrict their arguments to be
   integer constants, registers, and memory locations.
 
 {\if\edition\racketEd      
-\item The order of execution in x86 is explicit in the syntax, which
+\item The order of execution in {\ArchName} is explicit in the syntax, which
   is a sequence of instructions and jumps to labeled positions,
   whereas in \LangVar{} the order of evaluation is a left-to-right
   depth-first traversal of the abstract syntax tree.  \fi}
 
 \item A program in \LangVar{} can have any number of variables,
-  whereas x86 has 16 registers and the procedure call stack.
+  whereas {\ArchName} has \ifxeightsix{16}\ifriscv{32} registers and the procedure call stack.
 {\if\edition\racketEd    
 \item Variables in \LangVar{} can shadow other variables with the
-  same name. In x86, registers have unique names, and memory locations
+  same name. In {\ArchName}, registers have unique names, and memory locations
   have unique addresses.
 \fi}  
 \end{enumerate}
 
-We ease the challenge of compiling from \LangVar{} to x86 by breaking
+We ease the challenge of compiling from \LangVar{} to {\ArchName} by breaking
 down the problem into several steps, which deal with these differences
 one at a time. Each of these steps is called a \emph{pass} of the
 compiler.\index{subject}{pass}\index{subject}{compiler pass}
@@ -2948,7 +3141,7 @@ Our compiler for \LangVar{} consists of the following passes:
 
 \item[\key{select\_instructions}]\index{subject}{select instructions}
   handles the difference between
-  \LangVar{} operations and x86 instructions. This pass converts each
+  \LangVar{} operations and {\ArchName} instructions. This pass converts each
   \LangVar{} operation to a short sequence of instructions that
   accomplishes the same task.
 
@@ -2991,7 +3184,7 @@ use \key{let} in the output of \key{remove\_complex\_operands}.}
 The \key{select\_instructions} and \key{assign\_homes} passes are
 intertwined.
 %
-In chapter~\ref{ch:Lfun} we learn that in x86, registers are used for
+In chapter~\ref{ch:Lfun} we learn that in {\ArchName}, registers are used for
 passing arguments to functions and that it is preferable to assign
 parameters to their corresponding registers.  This suggests that it
 would be better to start with the \key{select\_instructions} pass,
@@ -2999,9 +3192,17 @@ which generates the instructions for argument passing, before
 performing register allocation.
 %
 On the other hand, by selecting instructions first we may run into a
-dead end in \key{assign\_homes}. Recall that only one argument of an
-x86 instruction may be a memory access, but \key{assign\_homes} might
+dead end in \key{assign\_homes}.
+\if\architecture\xeightysixEd
+Recall that only one argument of an
+{\ArchName} instruction may be a memory access, but \key{assign\_homes} might
 be forced to assign both arguments to memory locations.
+\fi
+\if\architecture\riscvEd
+Recall that only no argument of an
+{\ArchName} arithmetic instruction may be a memory access, but \key{assign\_homes} might
+be forced to assign an argument to a memory location.
+\fi
 %
 A sophisticated approach is to repeat the two passes until a solution
 is found. However, to reduce implementation complexity we recommend
@@ -3736,7 +3937,7 @@ list of \code{passes} and then run the script to test your compiler.
 
 In the \code{select\_instructions} pass we begin the work of
 translating \racket{from \LangCVar{}} to \LangXVar{}. The target
-language of this pass, \LangXVar{}, is a variant of x86 that still
+language of this pass, \LangXVar{}, is a variant of {\ArchName} that still
 uses variables, so we add an AST node of the form $\XVAR{\itm{var}}$
 to the \Arg{} nonterminal of the \LangXInt{} abstract syntax
 (figure~\ref{fig:x86-int-ast})\index{subject}{x86var@\LangXVar{}}.
@@ -3753,11 +3954,21 @@ to the \Arg{} nonterminal of the \LangXInt{} abstract syntax
 Next consider the cases for the $\Stmt$ nonterminal, starting with
 arithmetic operations. For example, consider the following addition
 operation, on the left side.  (Let $\Arg_1$ and $\Arg_2$ be the
-translations of $\Atm_1$ and $\Atm_2$, respectively.)  There is an
-\key{addq} instruction in x86, but it performs an in-place update.
+translations of $\Atm_1$ and $\Atm_2$, respectively.)
+\if\architecture\xeightysixEd
+There is an
+\key{addq} instruction in {\ArchName}, but it performs an in-place update.
 %
 So, we could move $\Arg_1$ into the \code{rax} register, then add
-$\Arg_2$ to \code{rax}, and then finally move \code{rax} into \itm{var}. 
+$\Arg_2$ to \code{rax}, and then finally move \code{rax} into
+\itm{var}.
+\fi
+\if\architecture\riscvEd
+There is a suitable \key{add} instruction in {\ArchName}, but it is
+unable to deal with all kinds of atomic expressions.
+%
+We leave it like that for the moment and fix the arguments later.
+\fi
 \begin{transformation}
 {\if\edition\racketEd    
 \begin{lstlisting}
@@ -3770,13 +3981,21 @@ $\Arg_2$ to \code{rax}, and then finally move \code{rax} into \itm{var}.
 \end{lstlisting}
 \fi}
 \compilesto
+\if\architecture\xeightysixEd
 \begin{lstlisting}
 movq |$\Arg_1$|, %rax
 addq |$\Arg_2$|, %rax
 movq %rax, |$\itm{var}$|
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+add  |$\itm{var}$|, |$\Arg_1$|, |$\Arg_2$|
+\end{lstlisting}
+\fi
 \end{transformation}
 %
+\if\architecture\xeightysixEd
 However, with some care we can generate shorter sequences of
 instructions. Suppose that one or more of the arguments of the
 addition is the same variable as the left-hand side of the assignment.
@@ -3820,20 +4039,21 @@ movq |$\Arg_1$|, |$\itm{var}$|
 addq |$\Arg_2$|, |$\itm{var}$|
 \end{lstlisting}
 \end{transformation}
+\fi
 
-The \READOP{} operation does not have a direct counterpart in x86
+The \READOP{} operation does not have a direct counterpart in {\ArchName}
 assembly, so we provide this functionality with the function
 \code{read\_int} in the file \code{runtime.c}, written in
 C~\citep{Kernighan:1988nx}. In general, we refer to all the
 functionality in this file as the \emph{runtime system}\index{subject}{runtime
   system}, or simply the \emph{runtime} for short. When compiling your
-generated x86 assembly code, you need to compile \code{runtime.c} to
+generated {\ArchName} assembly code, you need to compile \code{runtime.c} to
 \code{runtime.o} (an \emph{object file}, using \code{gcc} with option
 \code{-c}) and link it into the executable. For our purposes of code
 generation, all you need to do is translate an assignment of
 \READOP{} into a call to the \code{read\_int} function followed by a
-move from \code{rax} to the left-hand side variable.  (The
-return value of a function is placed in \code{rax}.)  
+move from \ifxeightsix{\code{rax}}\ifriscv{\code{a0}} to the left-hand side variable.  (The
+return value of a function is placed in \ifxeightsix{\code{rax}}\ifriscv{\code{a0}}.)  
 \begin{transformation}
 {\if\edition\racketEd  
 \begin{lstlisting}
@@ -3846,29 +4066,45 @@ return value of a function is placed in \code{rax}.)
 \end{lstlisting}
 \fi}
 \compilesto
+\if\architecture\xeightysixEd
 \begin{lstlisting}
 callq read_int
 movq %rax, |$\itm{var}$|
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+call read_int
+mv |$\itm{var}$|, a0
+\end{lstlisting}
+\fi
 \end{transformation}
 
 {\if\edition\pythonEd\pythonColor
 %
 Similarly, we translate the \code{print} operation, shown below, into
 a call to the \code{print\_int} function defined in \code{runtime.c}.
-In x86, the first six arguments to functions are passed in registers,
-with the first argument passed in register \code{rdi}. So we move the
-$\Arg$ into \code{rdi} and then call \code{print\_int} using the
-\code{callq} instruction.
+In {\ArchName}, the first \ifxeightsix{six}\ifriscv{eight} arguments to functions are passed in registers,
+with the first argument passed in register \ifxeightsix{\code{rdi}}\ifriscv{\code{a0}}. So we move the
+$\Arg$ into \ifxeightsix{\code{rdi}}\ifriscv{\code{a0}} and then call \code{print\_int} using the
+\ifxeightsix{\code{callq}}\ifriscv{\code{call}} instruction.
 \begin{transformation}
 \begin{lstlisting}
 print(|$\Atm$|)    
 \end{lstlisting}
 \compilesto
+\if\architecture\xeightysixEd
 \begin{lstlisting}
 movq |$\Arg$|, %rdi
 callq print_int  
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+mv a0, |$\Arg$|
+call print_int  
+\end{lstlisting}
+\fi
 \end{transformation}
 %
 \fi}  
@@ -3887,6 +4123,7 @@ recursively and then append the resulting instructions.
 %
 \fi}
 
+\if\architecture\xeightysixEd
 {\if\edition\pythonEd\pythonColor
 We recommend that you use the function \code{utils.label\_name} to
 transform strings into labels, for example, in
@@ -3894,6 +4131,7 @@ the target of the \code{callq} instruction. This practice makes your
 compiler portable across Linux and Mac OS X, which requires an underscore
 prefixed to all labels.
 \fi}
+\fi
 \begin{exercise}
   \normalfont\normalsize
 {\if\edition\racketEd
@@ -3926,7 +4164,7 @@ The \code{assign\_homes} pass compiles \LangXVar{} programs to
 \code{assign\_homes} pass is responsible for placing all the program
 variables in registers or on the stack. For runtime efficiency, it is
 better to place variables in registers, but because there are only
-sixteen registers, some programs must necessarily resort to placing
+\ifxeightsix{sixteen}\ifriscv{thirty two} registers, some programs must necessarily resort to placing
 some variables on the stack. In this chapter we focus on the mechanics
 of placing variables on the stack. We study an algorithm for placing
 variables in registers in chapter~\ref{ch:register-allocation-Lvar}.
@@ -3954,7 +4192,10 @@ section~\ref{sec:remove-complex-opera-Lvar}:\\
 The output of \code{select\_instructions} is shown next, on the left,
 and the output of \code{assign\_homes} is on the right.  In this
 example, we assign variable \code{a} to stack location
-\code{-8(\%rbp)} and variable \code{b} to location \code{-16(\%rbp)}.
+\ifxeightsix{\code{-8(\%rbp)}}\ifriscv{\code{-24(fp)}} and variable
+\code{b} to location
+\ifxeightsix{\code{-16(\%rbp)}}\ifriscv{\code{-32(fp}}. 
+\if\architecture\xeightysixEd
 \begin{transformation}
 \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
 movq $42, a
@@ -3969,19 +4210,36 @@ movq -8(%rbp), -16(%rbp)
 movq -16(%rbp), %rax
 \end{lstlisting}
 \end{transformation}
+\fi
+\if\architecture\riscvEd
+\begin{transformation}
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+mv a, $42
+mv b, a
+mv a0, b
+\end{lstlisting}
+\compilesto
+%stack-space: 16
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+mv -24(fp), $42
+mv -32(fp), -24(fp)
+mv a0, -32(fp)
+\end{lstlisting}
+\end{transformation}
+\fi
 
 \racket{
   The \code{assign\_homes} pass should replace all variables
   with stack locations.
   The list of variables can be obtained from 
   the \code{locals-types} entry in the $\itm{info}$ of the
-  \code{X86Program} node. The \code{locals-types} entry is an alist
+  \code{{\ARCHNAME}Program} node. The \code{locals-types} entry is an alist
   mapping all the variables in the program to their types
   (for now, just \code{Integer}).
   As an aside, the \code{locals-types} entry is
   computed by \code{type-check-Cvar} in the support code, which
   installs it in the $\itm{info}$ field of the \code{CProgram} node,
-  which you should propagate to the \code{X86Program} node.}
+  which you should propagate to the \code{{\ARCHNAME}Program} node.}
 %
 \python{The \code{assign\_homes} pass should replace all uses of
   variables with stack locations.}
@@ -3989,12 +4247,12 @@ movq -16(%rbp), %rax
 In the process of assigning variables to stack locations, it is
 convenient for you to compute and store the size of the frame (in
 bytes) in
-\racket{the $\itm{info}$ field of the \key{X86Program} node, with the key \code{stack-space},}
+\racket{the $\itm{info}$ field of the \key{{\ARCHNAME}Program} node, with the key \code{stack-space},}
 %
-\python{the field \code{stack\_space} of the \key{X86Program} node,}
+\python{the field \code{stack\_space} of the \key{{\ARCHNAME}Program} node,}
 %
 which is needed later to generate the conclusion of the \code{main}
-procedure. The x86-64 standard requires the frame size to be a
+procedure. The {\ArchName} standard requires the frame size to be a
 multiple of 16 bytes.\index{subject}{frame}
 
 % TODO: store the number of variables instead? -Jeremy
@@ -4026,8 +4284,7 @@ programs.
 
 The \code{patch\_instructions} pass compiles from \LangXVar{} to
 \LangXInt{} by making sure that each instruction adheres to the
-restriction that at most one argument of an instruction may be a
-memory reference. 
+restriction that all arguments of an arithmetic instruction must be registers. 
 
 We return to the following example.\\
 \begin{minipage}{0.5\textwidth}
@@ -4057,16 +4314,59 @@ The \code{assign\_homes} pass produces the following translation. \\
 \end{lstlisting}
 \fi}
 {\if\edition\pythonEd\pythonColor
+\if\architecture\xeightysixEd
 \begin{lstlisting}
    movq $42, -8(%rbp)
    movq -8(%rbp), -16(%rbp)
    movq -16(%rbp), %rdi
    callq print_int
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+    mv -24(fp), $42
+    mv -32(fp), -24(fp)
+    mv a0, -32(fp)
+    call print_int
+\end{lstlisting}
+\fi
 \fi}
 \end{minipage}\\
+\if\architecture\riscvEd
+None of the \code{mv} instructions is acceptable as generated, but two
+of them can be implemented by load or store instructions.
+This approach does not work for the second \key{mv} instruction because both
+arguments are stack locations.
+We suggest fixing this problem by
+loading the source location to the register \key{a0} and then
+store \key{a0} to the destination location, as follows.
+\begin{lstlisting}
+    ld a0, -24(fp)
+    sd a0, -32(fp)
+\end{lstlisting}
+The same trick can be used to resolve the immediate argument of the
+first move.
+\begin{lstlisting}
+    li a0, 42
+    sd a0, -24(fp)
+\end{lstlisting}
+After transforming the remaining move instruction, we obtain a legal
+{\ArchName} program.
+\begin{lstlisting}
+    li a0, 42
+    sd a0, -24(fp)
+    ld a0, -24(fp)
+    sd a0, -32(fp)
+    sd a0, -32(fp)
+    call print_int
+\end{lstlisting}
+Clearly, the last store instruction is redundant, but we leave its
+elimination to later passes.
+\fi
+\if\architecture\xeightysixEd
 The second \key{movq} instruction is problematic because both
-arguments are stack locations. We suggest fixing this problem by
+arguments are stack locations.
+We suggest fixing this problem by
 moving from the source location to the register \key{rax} and then
 from \key{rax} to the destination location, as follows.
 \begin{lstlisting}
@@ -4079,6 +4379,7 @@ one argument is an immediate integer larger than $2^{16}$ and the
 other is a memory reference, then the instruction is invalid.  One can
 fix this, for example, by first moving the immediate integer into
 \key{rax} and then using \key{rax} in place of the integer.
+\fi
 
 \begin{exercise}
 \normalfont\normalsize Implement the \key{patch\_instructions} pass in
@@ -4105,11 +4406,12 @@ programs.
 \label{sec:print-x86}
 \index{subject}{prelude}\index{subject}{conclusion}
 
-The last step of the compiler from \LangVar{} to x86 is to generate
+The last step of the compiler from \LangVar{} to {\ArchName} is to generate
 the \code{main} function with a prelude and conclusion wrapped around
 the rest of the program, as shown in figure~\ref{fig:p1-x86} and
 discussed in section~\ref{sec:x86}.
 
+\if\architecture\xeightysixEd
 When running on Mac OS X, your compiler should prefix an underscore to
 all labels (for example, changing \key{main} to \key{\_main}).
 %
@@ -4121,6 +4423,7 @@ all labels (for example, changing \key{main} to \key{\_main}).
   function returns \code{\textquotesingle Linux\textquotesingle},
   \code{\textquotesingle Windows\textquotesingle}, or
   \code{\textquotesingle Darwin\textquotesingle} (for Mac).}
+\fi
 
 \begin{exercise}\normalfont\normalsize
 %
@@ -4136,7 +4439,7 @@ list of \code{passes} and then run the script to test your compiler.
 %  
 Uncomment the call to the \key{compiler-tests} function
 (appendix~\ref{appendix:utilities}), which tests your complete
-compiler by executing the generated x86 code. It translates the x86
+compiler by executing the generated {\ArchName} code. It translates the {\ArchName}
 AST that you produce into a string by invoking the \code{print-x86}
 method of the \code{print-x86-class} in \code{utilities.rkt}. Compile
 the provided \key{runtime.c} file to \key{runtime.o} using
@@ -4147,9 +4450,9 @@ the provided \key{runtime.c} file to \key{runtime.o} using
 %
 Run the \code{run-tests.py} script to check whether the output
 programs produce the same result as the input programs. That script
-translates the x86 AST that you produce into a string by invoking the
-\code{repr} method that is implemented by the x86 AST classes in
-\code{x86\_ast.py}.
+translates the {\ArchName} AST that you produce into a string by invoking the
+\code{repr} method that is implemented by the {\ArchName} AST classes in
+\code{\ArchName\_ast.py}.
 %
 \fi}
 
@@ -5115,7 +5418,7 @@ all the details on lexical analysis.
 
 \index{subject}{register allocation}
 
-In chapter~\ref{ch:Lvar} we learned how to compile \LangVar{} to x86,
+In chapter~\ref{ch:Lvar} we learned how to compile \LangVar{} to {\ArchName},
 storing variables on the procedure call stack.  The CPU may require tens
 to hundreds of cycles to access a location on the stack, whereas
 accessing a register takes only a single cycle. In this chapter we
@@ -5132,7 +5435,7 @@ The program shown in figure~\ref{fig:reg-eg} serves as a running
 example. The source program is on the left and the output of
 instruction selection\index{subject}{instruction selection}
 is on the right. The program is almost
-completely in the x86 assembly language, but it still uses variables.
+completely in the {\ArchName} assembly language, but it still uses variables.
 Consider variables \code{x} and \code{z}.  After the variable \code{x}
 has been moved to \code{z}, it is no longer in use.  Variable \code{z}, on
 the other hand, is used only after this point, so \code{x} and
@@ -5246,7 +5549,7 @@ approach.
 
 As we perform register allocation, we must be aware of the
 \emph{calling conventions} \index{subject}{calling conventions} that
-govern how function calls are performed in x86.
+govern how function calls are performed in {\ArchName}.
 %
 Even though \LangVar{} does not include programmer-defined functions,
 our generated code includes a \code{main} function that is called by
@@ -5290,7 +5593,7 @@ view, the caller view and the callee view, as follows:
   the value in the conclusion of the function.
 \end{itemize}
 
-In x86, registers are also used for passing arguments to a function
+In {\ArchName}, registers are also used for passing arguments to a function
 and for the return value.  In particular, the first six arguments of a
 function are passed in the following six registers, in this order.
 \begin{lstlisting}
@@ -5359,7 +5662,7 @@ callee-saved registers.
 
 Returning to the example in
 figure~\ref{fig:example-calling-conventions}, let us analyze the
-generated x86 code on the right-hand side. Variable \code{x} is
+generated {\ArchName} code on the right-hand side. Variable \code{x} is
 assigned to \code{rbx}, a callee-saved register. Thus, it is already
 in a safe place during the second call to \code{read\_int}. Next,
 variable \code{y} is assigned to \code{rcx}, a caller-saved register,
@@ -5402,7 +5705,7 @@ print((x + y) + 42)
 \fi}
 \end{minipage}
 \begin{minipage}{0.45\textwidth}
-Generated x86 assembly:
+Generated {\ArchName} assembly:
 {\if\edition\racketEd
 \begin{lstlisting}
 start:
@@ -6705,7 +7008,7 @@ Run the script to test the register allocator.
   \code{allocate\_registers}.
   Run the \code{run-tests.py} script to check whether the
   output programs produce the same result as the input programs.
-  Inspect the generated x86 programs to make sure that some variables
+  Inspect the generated {\ArchName} programs to make sure that some variables
   are assigned to registers.
 \fi}
 \end{exercise}
@@ -6714,7 +7017,7 @@ Run the script to test the register allocator.
 \section{Patch Instructions}
 \label{sec:patch-instructions}
 
-The remaining step in the compilation to x86 is to ensure that the
+The remaining step in the compilation to {\ArchName} is to ensure that the
 instructions have at most one argument that is a memory access.
 %
 In the running example, the instruction \code{movq -8(\%rbp),
@@ -6818,16 +7121,16 @@ Run the script to test the \code{patch\_instructions} pass.
 \index{subject}{prelude}\index{subject}{conclusion}
 
 Recall that this pass generates the prelude and conclusion
-instructions to satisfy the x86 calling conventions
+instructions to satisfy the {\ArchName} calling conventions
 (section~\ref{sec:calling-conventions}). With the addition of the
 register allocator, the callee-saved registers used by the register
 allocator must be saved in the prelude and restored in the conclusion.
 In the \code{allocate\_registers} pass,
 %
 \racket{add an entry to the \itm{info}
-  of \code{X86Program} named \code{used\_callee}}
+  of \code{{\ARCHNAME}Program} named \code{used\_callee}}
 %
-\python{add a field named \code{used\_callee} to the \code{X86Program} AST node}
+\python{add a field named \code{used\_callee} to the \code{{\ARCHNAME}Program} AST node}
 %
 that stores the set of callee-saved registers that were assigned to
 variables. The \code{prelude\_and\_conclusion} pass can then access
@@ -6995,7 +7298,7 @@ main:
 \fi}
 \end{tcolorbox}
 \end{minipage}
-\caption{The x86 output from the running example
+\caption{The {\ArchName} output from the running example
   (figure~\ref{fig:reg-eg}), limiting allocation to just \code{rbx}
   and \code{rcx}.}
 \label{fig:running-example-x86}
@@ -7498,7 +7801,7 @@ callq print_int
 \begin{exercise}\normalfont\normalsize
 Change your implementation of \code{allocate\_registers} to take move
 biasing into account. Create two new tests that include at least one
-opportunity for move biasing, and visually inspect the output x86
+opportunity for move biasing, and visually inspect the output {\ArchName}
 programs to make sure that your move biasing is working properly. Make
 sure that your compiler still passes all the tests.
 \end{exercise}
@@ -8454,7 +8757,7 @@ comparison operators to the \Exp{} nonterminal and the literals
 flow, \LangCIf{} adds \key{goto} and \code{if} statements to the
 \Tail{} nonterminal. The condition of an \code{if} statement is a
 comparison operation and the branches are \code{goto} statements,
-making it straightforward to compile \code{if} statements to x86.  The
+making it straightforward to compile \code{if} statements to {\ArchName}.  The
 \key{CProgram} construct contains an alist mapping labels to $\Tail$
 expressions. A \code{goto} statement transfers control to the $\Tail$
 expression corresponding to its label.
@@ -8477,7 +8780,7 @@ the arguments of operators are restricted to atomic expressions. The
 include a restricted form of \code{if} statement. The condition must be
 a comparison, and the two branches may contain only \code{goto}
 statements. These restrictions make it easier to translate \code{if}
-statements to x86.  The \LangCIf{} language also adds a \code{return}
+statements to {\ArchName}.  The \LangCIf{} language also adds a \code{return}
 statement to finish the program with a specified value.
 %
 The \key{CProgram} construct contains a dictionary mapping labels to
@@ -8616,10 +8919,10 @@ abstract syntax.
 
 To implement Booleans, the new logical operations, the
 comparison operations, and the \key{if} expression\python{ and
-  statement}, we delve further into the x86
+  statement}, we delve further into the {\ArchName}
 language. Figures~\ref{fig:x86-1-concrete} and \ref{fig:x86-1} present
 the definitions of the concrete and abstract syntax for the \LangXIf{}
-subset of x86, which includes instructions for logical operations,
+subset of {\ArchName}, which includes instructions for logical operations,
 comparisons, and \racket{conditional} jumps.
 %
 \python{The abstract syntax for an \LangXIf{} program contains a
@@ -8627,11 +8930,11 @@ comparisons, and \racket{conditional} jumps.
   which we refer to as a \emph{basic block}\index{subject}{basic
     block}.}
 
-As x86 does not provide direct support for Booleans, we take the usual
+As {\ArchName} does not provide direct support for Booleans, we take the usual
 approach of encoding Booleans as integers, with \code{True} as $1$ and
 \code{False} as $0$.
 
-Furthermore, x86 does not provide an instruction that directly
+Furthermore, {\ArchName} does not provide an instruction that directly
 implements logical negation (\code{not} in \LangIf{} and \LangCIf{}).
 However, the \code{xorq} instruction can be used to encode \code{not}.
 The \key{xorq} instruction takes two arguments, performs a pairwise
@@ -8650,7 +8953,7 @@ $0011$ and $0101$ yields $0110$. Notice that in the row of the table
 for the bit $1$, the result is the opposite of the second bit.  Thus,
 the \code{not} operation can be implemented by \code{xorq} with $1$ as
 the first argument, as follows, where $\Arg$ is the translation of
-$\Atm$ to x86:
+$\Atm$ to {\ArchName}:
 \[
 \CASSIGN{\Var}{\CUNIOP{\key{not}}{\Atm}}
 \qquad\Rightarrow\qquad
