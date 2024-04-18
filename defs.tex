@@ -79,23 +79,32 @@
 \newcommand{\LangInst}{\ensuremath{\Lang_{\mathsf{Inst}}}} %R'10
 \newcommand{\LangCLoopPVec}{\ensuremath{\CLang^{\mathsf{POr}}_{\circlearrowleft}}} %Cp7
 
-\newcommand{\LangXVar}{$\mathrm{x86}_{\mathsf{Var}}$} % pseudo x86_0
-\newcommand{\LangXASTInt}{\ensuremath{\mathrm{x86}_{\mathsf{Int}}}} % x86_0
-\newcommand{\LangXInt}{$\mathrm{x86}_{\mathsf{Int}}$} %x86^{\dagger}_0
-\newcommand{\LangXIntM}{\mathrm{x86}_{\mathsf{Int}}} %x86^{\dagger}_0
-\newcommand{\LangXASTIf}{\ensuremath{\mathrm{x86}_{\mathsf{If}}}} %x86_1
-\newcommand{\LangXIf}{$\mathrm{x86}_{\mathsf{If}}$} %x86^{\dagger}_1
-\newcommand{\LangXIfM}{\mathrm{x86}_{\mathsf{If}}} %x86^{\dagger}_1
-\newcommand{\LangXIfVar}{\ensuremath{\mathrm{x86}^{\mathsf{Var}}_{\mathsf{If}}}} %x86^{*}_1
-\newcommand{\LangXASTGlobal}{\ensuremath{\mathrm{x86}_{\mathsf{Global}}}} %x86_2
-\newcommand{\LangXGlobal}{$\mathrm{x86}_{\mathsf{Global}}$} %x86^{\dagger}_2
-\newcommand{\LangXGlobalM}{\mathrm{x86}_{\mathsf{Global}}} %x86^{\dagger}_2
-\newcommand{\LangXGlobalVar}{\ensuremath{\mathrm{x86}^{\mathsf{Var}}_{\mathsf{Global}}}} %x86^{*}_2
-\newcommand{\LangXIndCall}{$\mathrm{x86}^{\mathsf{Def}}_{\mathsf{callq*}}$} %x86_3
-\newcommand{\LangXIndCallM}{\mathrm{x86}^{\mathsf{Def}}_{\mathsf{callq*}}} %x86_3
-\newcommand{\LangXIndCallFlat}{$\mathrm{x86}_{\mathsf{callq*}}$} %x86_3
-\newcommand{\LangXIndCallFlatM}{\mathrm{x86}_{\mathsf{callq*}}} %x86_3
-\newcommand{\LangXIndCallVar}{\ensuremath{\mathrm{x86}^{\mathsf{Var},\mathsf{Def}}_{\mathsf{callq*}}}} %x86^*_3
+\if\architecture\xeightysixEd
+\newcommand{\ArchName}{x86}
+\newcommand{\ARCHNAME}{X86}
+\fi
+\if\architecture\riscvEd
+\newcommand{\ArchName}{riscv}
+\newcommand{\ARCHNAME}{RISCV}
+\fi
+
+\newcommand{\LangXVar}{$\mathrm{{\ArchName}}_{\mathsf{Var}}$} % pseudo {\ArchName}_0
+\newcommand{\LangXASTInt}{\ensuremath{\mathrm{{\ArchName}}_{\mathsf{Int}}}} % {\ArchName}_0
+\newcommand{\LangXInt}{$\mathrm{{\ArchName}}_{\mathsf{Int}}$} %{\ArchName}^{\dagger}_0
+\newcommand{\LangXIntM}{\mathrm{{\ArchName}}_{\mathsf{Int}}} %{\ArchName}^{\dagger}_0
+\newcommand{\LangXASTIf}{\ensuremath{\mathrm{{\ArchName}}_{\mathsf{If}}}} %{\ArchName}_1
+\newcommand{\LangXIf}{$\mathrm{{\ArchName}}_{\mathsf{If}}$} %{\ArchName}^{\dagger}_1
+\newcommand{\LangXIfM}{\mathrm{{\ArchName}}_{\mathsf{If}}} %{\ArchName}^{\dagger}_1
+\newcommand{\LangXIfVar}{\ensuremath{\mathrm{{\ArchName}}^{\mathsf{Var}}_{\mathsf{If}}}} %{\ArchName}^{*}_1
+\newcommand{\LangXASTGlobal}{\ensuremath{\mathrm{{\ArchName}}_{\mathsf{Global}}}} %{\ArchName}_2
+\newcommand{\LangXGlobal}{$\mathrm{{\ArchName}}_{\mathsf{Global}}$} %{\ArchName}^{\dagger}_2
+\newcommand{\LangXGlobalM}{\mathrm{{\ArchName}}_{\mathsf{Global}}} %{\ArchName}^{\dagger}_2
+\newcommand{\LangXGlobalVar}{\ensuremath{\mathrm{{\ArchName}}^{\mathsf{Var}}_{\mathsf{Global}}}} %{\ArchName}^{*}_2
+\newcommand{\LangXIndCall}{$\mathrm{{\ArchName}}^{\mathsf{Def}}_{\mathsf{callq*}}$} %{\ArchName}_3
+\newcommand{\LangXIndCallM}{\mathrm{{\ArchName}}^{\mathsf{Def}}_{\mathsf{callq*}}} %{\ArchName}_3
+\newcommand{\LangXIndCallFlat}{$\mathrm{{\ArchName}}_{\mathsf{callq*}}$} %{\ArchName}_3
+\newcommand{\LangXIndCallFlatM}{\mathrm{{\ArchName}}_{\mathsf{callq*}}} %{\ArchName}_3
+\newcommand{\LangXIndCallVar}{\ensuremath{\mathrm{{\ArchName}}^{\mathsf{Var},\mathsf{Def}}_{\mathsf{callq*}}}} %{\ArchName}^*_3
 
 \newcommand{\Stmt}{\itm{stmt}}
 \newcommand{\Exp}{\itm{exp}}
@@ -387,8 +396,8 @@
 \newcommand{\JMP}[1]{\key{(Jmp}~#1\key{)}}
 \newcommand{\JMPIF}[2]{\key{(JmpIf}~#1~#2\key{)}}
 \newcommand{\RETQ}{\key{(Retq)}}
-\newcommand{\XPROGRAM}[2]{\LP\code{X86Program}~#1~#2\RP}
-\newcommand{\XPROGRAMDEFS}[2]{\LP\code{X86ProgramDefs}~#1~#2\RP}
+\newcommand{\XPROGRAM}[2]{\LP\code{{\ARCHNAME}Program}~#1~#2\RP}
+\newcommand{\XPROGRAMDEFS}[2]{\LP\code{{\ARCHNAME}ProgramDefs}~#1~#2\RP}
 \newcommand{\BYTEREG}[1]{\key{(ByteReg}~#1\key{)}}
 \newcommand{\CDEF}[4]{\LP\key{define}~\LP#1~#2\RP\,\key{:}\,#3~#4\RP}
 \newcommand{\DEF}[5]{\LP\key{Def}~#1~#2~#3~#4~#5\RP}
@@ -404,17 +413,24 @@
 \newcommand{\IMM}[1]{\key{Immediate}\LP #1\RP}
 \newcommand{\REG}[1]{\key{Reg}\LP #1\RP}
 \newcommand{\DEREF}[2]{\key{Deref}\LP #1 \key{,} #2 \RP}
+\newcommand{\TERINSTR}[4]{\key{Instr}\LP #1 \key{,} \LS #2 \key{,} #3 \key{,} #4 \RS \RP}
 \newcommand{\BININSTR}[3]{\key{Instr}\LP #1 \key{,} \LS #2 \key{,} #3 \RS \RP}
 \newcommand{\UNIINSTR}[2]{\key{Instr}\LP #1 \key{,} \LS #2 \RS \RP}
-\newcommand{\CALLQ}[2]{\key{Callq}\LP #1 \key{,} #2 \RP}
 \newcommand{\PUSHQ}[1]{\key{Instr}\LP \skey{pushq} \key{,} \LS #1 \RS \RP}
 \newcommand{\POPQ}[1]{\key{Instr}\LP \skey{popq} \key{,} \LS #1 \RS \RP}
 \newcommand{\JMP}[1]{\key{Jump}\LP #1 \RP}
 \newcommand{\JMPIF}[2]{\key{JumpIf}\LP #1 \key{,} #2 \RP}
+\if\architecture\xeightysixEd
+\newcommand{\CALLQ}[2]{\key{Callq}\LP #1 \key{,} #2 \RP}
 \newcommand{\RETQ}{\key{Instr}\LP \skey{retq} \key{,} \LS \RS \RP}
+\fi
+\if\architecture\riscvEd
+\newcommand{\CALLQ}[2]{\key{Call}\LP #1 \key{,} #2 \RP}
+\newcommand{\RETQ}{\key{Instr}\LP \skey{ret} \key{,} \LS \RS \RP}
+\fi
 % TODO: change \XPROGRAM to 1 parameter
-\newcommand{\XPROGRAM}[2]{\code{X86Program}\LP #2 \RP}
-\newcommand{\XPROGRAMDEFS}[1]{\code{X86ProgramDefs}\LP #1 \RP}
+\newcommand{\XPROGRAM}[2]{\code{{\ARCHNAME}Program}\LP #2 \RP}
+\newcommand{\XPROGRAMDEFS}[1]{\code{{\ARCHNAME}ProgramDefs}\LP #1 \RP}
 \newcommand{\BYTEREG}[1]{\key{ByteReg}\LP #1 \RP}
 \newcommand{\CDEF}[4]{\key{def}~#1\LP #2 \RP ~\key{->}~ #3 \key{:}~#4}
 \newcommand{\CDEFU}[3]{\key{def}~#1\LP #2 \RP \key{:}~#3}
@@ -440,3 +456,8 @@
   }{%
   \end{minipage}\end{tabular}\end{center}%
 }
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "book"
+%%% End:
