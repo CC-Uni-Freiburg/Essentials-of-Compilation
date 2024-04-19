@@ -3029,20 +3029,23 @@ register allocation (chapter~\ref{ch:register-allocation-Lvar}).
 \Reg &::=& \allastregisters{} \\
 \Arg &::=&  \IMM{\Int} \MID \REG{\Reg}
    \MID \DEREF{\Reg}{\Int} \\
-  \Instr &::=& \TERINSTR{\scode{add}}{\Reg}{\Reg}{\Reg}
-               \MID \TERINSTR{\scode{sub}}{\Reg}{\Reg}{\Reg} \\
-     &\MID& \TERINSTR{\scode{addi}}{\Reg}{\Reg}{\Int} 
-            \MID \BININSTR{\scode{neg}}{\Reg}{\Reg} \\
-            &\MID& \BININSTR{\scode{mv}}{\Reg}{\Reg}
-            \MID \BININSTR{\scode{li}}{\Reg}{\Int} \\
-       &\MID& \BININSTR{\scode{sd}}{\Reg}{\DEREF{\Reg}{\Int}} \MID \BININSTR{\scode{ld}}{\Reg}{\DEREF{\Reg}{\Int}} \\
-       &\MID& \CALLQ{\itm{label}}{\itm{int}} \MID \RETQ{}  \MID \JMP{\itm{label}} \\
+  \Instr &::=& \TERINSTR{\scode{add}}{\Arg}{\Arg}{\Arg}
+               \MID \TERINSTR{\scode{sub}}{\Arg}{\Arg}{\Arg} \\
+     &\MID&
+            \BININSTR{\scode{neg}}{\Arg}{\Arg} 
+            \MID \BININSTR{\scode{mv}}{\Arg}{\Arg} \\
+%       &\MID& \BININSTR{\scode{sd}}{\Reg}{\DEREF{\Reg}{\Int}} \MID \BININSTR{\scode{ld}}{\Reg}{\DEREF{\Reg}{\Int}} \\
+     &\MID& \CALLQ{\itm{label}}{\itm{int}} \MID \RETQ{}
+            % \MID \JMP{\itm{label}}
+  \\
 \LangXIntM{} &::= & \XPROGRAM{}{\Instr^{*}}{}
+% \TERINSTR{\scode{addi}}{\Reg}{\Reg}{\Int}
+% \MID \BININSTR{\scode{li}}{\Reg}{\Int} \\
 \end{array}
 \]
 \fi}
 \end{tcolorbox}
-\caption{The abstract syntax of \LangXInt{} assembly.\ifriscv{CONSTRUCTION}}
+\caption{The abstract syntax of \LangXInt{} assembly.}
 \label{fig:x86-int-ast}
 \index{subject}{x86int@\LangXInt{} abstract syntax}
 \end{figure}
@@ -4350,18 +4353,28 @@ first move.
     li a0, 42
     sd a0, -24(fp)
 \end{lstlisting}
-After transforming the remaining move instruction, we obtain a legal
+After transforming the remaining move instruction to a store instruction, we obtain a legal
 {\ArchName} program.
 \begin{lstlisting}
     li a0, 42
     sd a0, -24(fp)
     ld a0, -24(fp)
     sd a0, -32(fp)
-    sd a0, -32(fp)
+    ld a0, -32(fp)
     call print_int
 \end{lstlisting}
-Clearly, the last store instruction is redundant, but we leave its
+All load instructions in this program are redundant, but we leave their
 elimination to later passes.
+
+When patching the \code{add} instruction, there are two cases
+to consider. First, one of the arguments may be immediate, in which
+case we should generate a \code{addi} instruction, unless the
+immediate value is too big to fit in the 12~bit allocated for
+immediate values. Second, both
+arguments may be in memory or immediate, in which case we load them into registers
+\key{a0} and \key{a1}. One might be tempted to perform the addition at
+compile time, if both operands are immediate, but that requires a
+correct emulation of the processor's 64-bit addition instruction.
 \fi
 \if\architecture\xeightysixEd
 The second \key{movq} instruction is problematic because both
