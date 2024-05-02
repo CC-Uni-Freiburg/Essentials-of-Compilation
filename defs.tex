@@ -82,10 +82,20 @@
 \if\architecture\xeightysixEd
 \newcommand{\ArchName}{x86}
 \newcommand{\ARCHNAME}{X86}
+\newcommand{\ICALL}{\code{callq}}
+\newcommand{\IMOVE}{\code{movq}}
+\newcommand{\RET}{\code{retq}}
+\newcommand{\SP}{\code{rsp}}
+\newcommand{\FP}{\code{rbp}}
 \fi
 \if\architecture\riscvEd
 \newcommand{\ArchName}{RISC-V}
 \newcommand{\ARCHNAME}{RISCV}
+\newcommand{\ICALL}{\code{call}}
+\newcommand{\IMOVE}{\code{mv}}
+\newcommand{\RET}{\code{ret}}
+\newcommand{\SP}{\code{sp}}
+\newcommand{\FP}{\code{fp}}
 \fi
 
 \newcommand{\LangXVar}{$\mathrm{{\ArchName}}_{\mathsf{Var}}$} % pseudo {\ArchName}_0
