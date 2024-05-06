@@ -82,20 +82,30 @@
 \if\architecture\xeightysixEd
 \newcommand{\ArchName}{x86}
 \newcommand{\ARCHNAME}{X86}
+\newcommand{\INEG}{\code{negq}}
+\newcommand{\IXOR}{\code{xorq}}
+\newcommand{\IADD}{\code{addq}}
+\newcommand{\ISUB}{\code{subq}}
 \newcommand{\ICALL}{\code{callq}}
 \newcommand{\IMOVE}{\code{movq}}
 \newcommand{\RET}{\code{retq}}
 \newcommand{\SP}{\code{rsp}}
 \newcommand{\FP}{\code{rbp}}
+\newcommand{\RAX}{\code{rax}}
 \fi
 \if\architecture\riscvEd
 \newcommand{\ArchName}{RISC-V}
 \newcommand{\ARCHNAME}{RISCV}
+\newcommand{\INEG}{\code{neg}}
+\newcommand{\IXOR}{\code{xor}}
+\newcommand{\IADD}{\code{add}}
+\newcommand{\ISUB}{\code{sub}}
 \newcommand{\ICALL}{\code{call}}
 \newcommand{\IMOVE}{\code{mv}}
 \newcommand{\RET}{\code{ret}}
 \newcommand{\SP}{\code{sp}}
 \newcommand{\FP}{\code{fp}}
+\newcommand{\RAX}{\code{a0}}
 \fi
 
 \newcommand{\LangXVar}{$\mathrm{{\ArchName}}_{\mathsf{Var}}$} % pseudo {\ArchName}_0
@@ -429,12 +439,14 @@
 \newcommand{\PUSHQ}[1]{\key{Instr}\LP \skey{pushq} \key{,} \LS #1 \RS \RP}
 \newcommand{\POPQ}[1]{\key{Instr}\LP \skey{popq} \key{,} \LS #1 \RS \RP}
 \newcommand{\JMP}[1]{\key{Jump}\LP #1 \RP}
-\newcommand{\JMPIF}[2]{\key{JumpIf}\LP #1 \key{,} #2 \RP}
 \if\architecture\xeightysixEd
+\newcommand{\JMPIF}[2]{\key{JumpIf}\LP #1 \key{,} #2 \RP}
 \newcommand{\CALLQ}[2]{\key{Callq}\LP #1 \key{,} #2 \RP}
 \newcommand{\RETQ}{\key{Instr}\LP \skey{retq} \key{,} \LS \RS \RP}
 \fi
 \if\architecture\riscvEd
+\newcommand{\JMPIF}[4]{\key{JumpIf}\LP #1 \key{,} #2 \key{,} #3 \key{,} #4 \RP}
+\newcommand{\SETIF}[3]{\key{SetIf}\LP #1 \key{,} #2  \key{,} #3 \RP}
 \newcommand{\CALLQ}[2]{\key{Call}\LP #1 \key{,} #2 \RP}
 \newcommand{\RETQ}{\key{Instr}\LP \skey{ret} \key{,} \LS \RS \RP}
 \fi

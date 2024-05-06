@@ -2504,6 +2504,7 @@ each of which can be an integer constant (called an \emph{immediate
   && \key{a0} - \key{a7} \MID \key{s2} - \key{s11} \MID \key{t0} - \key{t6}}
 \fi
 
+\if\architecture\xeightysixEd
 \newcommand{\GrammarXInt}{
 \begin{array}{rcl}
 \Reg &::=& \allregisters{} \\
@@ -2518,6 +2519,21 @@ each of which can be an integer constant (called an \emph{immediate
   && \itm{label}\key{:}\; \Instr 
 \end{array}
 }
+\fi
+\if\architecture\riscvEd
+\newcommand{\GrammarXInt}{
+\begin{array}{rcl}
+\Reg &::=& \allregisters{} \\
+\Arg &::=&  \key{\$}\Int \MID \key{\%}\Reg \MID \Int\key{(}\key{\%}\Reg\key{)}\\
+\Instr &::=& \key{add} \; \Arg\key{,} \Arg \MID
+      \key{sub} \; \Arg\key{,} \Arg \MID
+      \key{neg} \; \Arg \MID \key{mv} \; \Arg\key{,} \Arg \MID \\
+  && \key{call} \; \mathit{label} \MID
+      \key{ret} \MID
+      \key{j}\,\itm{label} \MID \\
+  && \itm{label}\key{:}\; \Instr 
+\end{array}
+}\fi
 
 \begin{figure}[tp]
 \begin{tcolorbox}[colback=white]
@@ -2995,12 +3011,10 @@ register allocation (chapter~\ref{ch:register-allocation-Lvar}).
 \Reg &::=& \allregisters{} \\
 \Arg &::=&  \IMM{\Int} \MID \REG{\Reg}
    \MID \DEREF{\Reg}{\Int} \\
-\Instr &::=& \TERINSTR{\skey{add}}{\Reg}{\Reg}{\Reg} 
-       \MID \BININSTR{\skey{subq}}{\Arg}{\Arg}\\
-       &\MID& \UNIINSTR{\skey{negq}}{\Arg}
-       \MID \BININSTR{\skey{movq}}{\Arg}{\Arg}\\
-       &\MID& \PUSHQ{\Arg}
-       \MID \POPQ{\Arg} \\
+\Instr &::=& \TERINSTR{\skey{add}}{\Arg}{\Arg}{\Arg} 
+       \MID \TERINSTR{\skey{sub}}{\Arg}{\Arg}{\Arg}\\
+       &\MID& \BININSTR{\skey{neg}}{\Arg}{\Arg}
+       \MID \BININSTR{\skey{mv}}{\Arg}{\Arg}\\
       &\MID& \CALLQ{\itm{label}}{\itm{int}}
        \MID \RETQ{}
        \MID \JMP{\itm{label}}  \\
@@ -5603,7 +5617,7 @@ and they are
 \fi
 \if\architecture\riscvEd
 \begin{lstlisting}
-   ra t0-t2 a0-a7 t3-t6
+   ra t0-t6 a0-a7
 \end{lstlisting}
 \fi
 On the other hand, the callee is responsible for preserving the values
@@ -6550,15 +6564,14 @@ correspondence, with \ifxeightsix{$k=11$}\ifriscv{$k=24$}.
 \if\architecture\riscvEd
 \begin{lstlisting}
   0: t0, 1: t1, 2: t2, 3: t3, 4: t4, 5: t5, 6: t6,
-  7: a7, 8: a6, 9: a5, 10: a4, 10: a3, 11: a2, 12:a1,
+  7: a7, 8: a6, 9: a5, 10: a4, 10: a3, 11: a2, 12: a1,
   13: s1, 14: s2, 15: s3, 16: s4, 17: s5, 18: s6, 19: s7,
   20: s8, 21: s9, 22: s10, 23: s11
 \end{lstlisting}
 \fi
 The integers $k$ and larger correspond to stack locations. The
 registers that are not used for register allocation, such as
-\code{rax}, are assigned to negative integers. In the example, we
-use the following correspondence.
+\RAX, are assigned to negative integers. The example assumes the following correspondence.
 \if\architecture\xeightysixEd
 \begin{lstlisting}
   -1: rax, -2: rsp, -3: rbp, -4: r11, -5: r15
@@ -7687,11 +7700,11 @@ allocated.
 \fi
 %
 Variable \racket{\code{y}}\python{\code{z}} was spilled to the stack
-location \ifxeightsix{\code{-16(\%rbp)}}\ifriscv{code{-24(fp)}}.  Recall that the prelude saved the
+location \ifxeightsix{\code{-16(\%rbp)}}\ifriscv{\code{-24(fp)}}.  Recall that the prelude saved the
 callee-save register \ifxeightsix{\code{rbx}}\ifriscv{\code{s0}} onto the stack. The spilled variables
 must be placed lower on the stack than the saved callee-save
 registers, so in this case \racket{\code{y}}\python{z} is placed at
-\ifxeightsix{\code{-16(\%rbp)}}\ifriscv{\code{-24(fp}}.
+\ifxeightsix{\code{-16(\%rbp)}}\ifriscv{\code{-24(fp)}}.
 
 In the conclusion\index{subject}{conclusion}, we undo the work that was
 done in the prelude.
@@ -8111,6 +8124,7 @@ At this point, vertices \code{x} and \code{v} are most saturated, but
 \fi}
 %
 {\if\edition\pythonEd\pythonColor
+  {\if\architecture\xeightysixEd
 Now we replay the graph coloring, pausing before the coloring of
 \code{w}. Recall the following configuration. The most saturated vertices
 were \code{tmp\_1}, \code{w}, and \code{y}.
@@ -8198,6 +8212,99 @@ To finish the coloring, \code{x} and \code{v} get $0$ and
 \draw (v) to (w);
 \end{tikzpicture}
 \]
+\fi}
+{\if\architecture\riscvEd
+  \textbf{CONSTRUCTION---TDB: develop new example for RISC-V. Move
+    biasing has no influence on this example.}
+  
+Now we replay the graph coloring, pausing before the coloring of
+\code{w}. Recall the following configuration. The most saturated vertices
+were \code{tmp\_1}, \code{w}, and \code{y}.
+\[
+\begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
+\node (t0) at (0,2) {$\ttm{tmp\_0}: 0, \{1\}$};
+\node (t1) at (0,0) {$\ttm{tmp\_1}: -, \{0\}$};
+\node (z) at (3,2)  {$\ttm{z}: 1, \{0\}$};
+\node (x) at (6,2)  {$\ttm{x}: -, \{\}$};
+\node (y) at (3,0)  {$\ttm{y}: -, \{1\}$};
+\node (w) at (6,0)  {$\ttm{w}: -, \{1\}$};
+\node (v) at (9,0)  {$\ttm{v}: -, \{\}$};
+
+\draw (t0) to (t1);
+\draw (t0) to (z);
+\draw (z) to (y);
+\draw (z) to (w);
+\draw (x) to (w);
+\draw (y) to (w);
+\draw (v) to (w);
+\end{tikzpicture}
+\]
+We have arbitrarily chosen to color \code{w} instead of \code{tmp\_1}
+or \code{y}. Note, however, that \code{w} is not move related to any
+variables, whereas \code{y} and \code{tmp\_1} are move related to
+\code{tmp\_0} and \code{z}, respectively. If we instead choose
+\code{y} and color it $0$, we can delete another move instruction.
+\[
+\begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
+\node (t0) at (0,2) {$\ttm{tmp\_0}: 0, \{1\}$};
+\node (t1) at (0,0) {$\ttm{tmp\_1}: -, \{0\}$};
+\node (z) at (3,2)  {$\ttm{z}: 1, \{0\}$};
+\node (x) at (6,2)  {$\ttm{x}: -, \{\}$};
+\node (y) at (3,0)  {$\ttm{y}: 0, \{1\}$};
+\node (w) at (6,0)  {$\ttm{w}: -, \{0,1\}$};
+\node (v) at (9,0)  {$\ttm{v}: -, \{\}$};
+
+\draw (t0) to (t1);
+\draw (t0) to (z);
+\draw (z) to (y);
+\draw (z) to (w);
+\draw (x) to (w);
+\draw (y) to (w);
+\draw (v) to (w);
+\end{tikzpicture}
+\]
+Now \code{w} is the most saturated, so we color it $2$.
+\[
+\begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
+\node (t0) at (0,2) {$\ttm{tmp\_0}: 0, \{1\}$};
+\node (t1) at (0,0) {$\ttm{tmp\_1}: -, \{0\}$};
+\node (z) at (3,2)  {$\ttm{z}: 1, \{0\}$};
+\node (x) at (6,2)  {$\ttm{x}: -, \{2\}$};
+\node (y) at (3,0)  {$\ttm{y}: 0, \{1,2\}$};
+\node (w) at (6,0)  {$\ttm{w}: 2, \{0,1\}$};
+\node (v) at (9,0)  {$\ttm{v}: -, \{2\}$};
+
+\draw (t0) to (t1);
+\draw (t0) to (z);
+\draw (z) to (y);
+\draw (z) to (w);
+\draw (x) to (w);
+\draw (y) to (w);
+\draw (v) to (w);
+\end{tikzpicture}
+\]
+To finish the coloring, \code{x} and \code{v} get $0$ and
+\code{tmp\_1} gets $1$.
+\[
+\begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
+\node (t0) at (0,2) {$\ttm{tmp\_0}: 0, \{1\}$};
+\node (t1) at (0,0) {$\ttm{tmp\_1}: 1, \{0\}$};
+\node (z) at (3,2)  {$\ttm{z}: 1, \{0\}$};
+\node (x) at (6,2)  {$\ttm{x}: 0, \{2\}$};
+\node (y) at (3,0)  {$\ttm{y}: 0, \{1,2\}$};
+\node (w) at (6,0)  {$\ttm{w}: 2, \{0,1\}$};
+\node (v) at (9,0)  {$\ttm{v}: 0, \{2\}$};
+
+\draw (t0) to (t1);
+\draw (t0) to (z);
+\draw (z) to (y);
+\draw (z) to (w);
+\draw (x) to (w);
+\draw (y) to (w);
+\draw (v) to (w);
+\end{tikzpicture}
+\]
+\fi}
 \fi}
 
 So, we have the following assignment of variables to registers.
@@ -9471,12 +9578,14 @@ As {\ArchName} does not provide direct support for Booleans, we take the usual
 approach of encoding Booleans as integers, with \code{True} as $1$ and
 \code{False} as $0$.
 
+\if\architecture\xeightysixEd
 Furthermore, {\ArchName} does not provide an instruction that directly
 implements logical negation (\code{not} in \LangIf{} and \LangCIf{}).
-However, the \code{xorq} instruction can be used to encode \code{not}.
-The \key{xorq} instruction takes two arguments, performs a pairwise
-exclusive-or ($\mathrm{XOR}$) operation on each bit of its arguments,
-and writes the results into its second argument.  Recall the following
+However, the \IXOR{} instruction can be used to encode \code{not}.
+The \IXOR{} instruction takes \ifxeightsix{two}\ifriscv{three} arguments, performs a pairwise
+exclusive-or ($\mathrm{XOR}$) operation on each bit of its
+\ifxeightsix{arguments}\ifriscv{second and third argument},
+and writes the results into its \ifxeightsix{second}\ifriscv{first} argument.  Recall the following
 truth table for exclusive-or:
 \begin{center}
 \begin{tabular}{l|cc}
@@ -9488,18 +9597,34 @@ truth table for exclusive-or:
 For example, applying $\mathrm{XOR}$ to each bit of the binary numbers
 $0011$ and $0101$ yields $0110$. Notice that in the row of the table
 for the bit $1$, the result is the opposite of the second bit.  Thus,
-the \code{not} operation can be implemented by \code{xorq} with $1$ as
-the first argument, as follows, where $\Arg$ is the translation of
+the \code{not} operation can be implemented by \IXOR{} with $1$ as
+the first argument.
+\fi
+\if\architecture\riscvEd
+Fortunately, {\ArchName} provides an instruction that directly
+implements logical negation (\code{not} in \LangIf{} and \LangCIf{}).
+The instruction $\key{seqz}~d\key{,}~s$ (set if $=$ zero) sets $d$ to $1$ if $s=0$ and
+sets $d$ to $0$ if $s\ne0$.
+\fi
+In the following schema, $\Arg$ is the translation of
 $\Atm$ to {\ArchName}:
 \[
 \CASSIGN{\Var}{\CUNIOP{\key{not}}{\Atm}}
 \qquad\Rightarrow\qquad
+\if\architecture\xeightysixEd
 \begin{array}{l}
 \key{movq}~ \Arg\key{,} \Var\\
 \key{xorq}~ \key{\$1,} \Var
 \end{array}
+\fi
+\if\architecture\riscvEd
+\begin{array}{l}
+\key{seqz}~ \Var\key{,} \Arg
+\end{array}
+\fi
 \]
 
+\if\architecture\xeightysixEd
 \newcommand{\GrammarXIf}{
 \begin{array}{lcl}
   \itm{bytereg} &::=& \key{ah} \MID \key{al} \MID \key{bh} \MID \key{bl}
@@ -9513,7 +9638,17 @@ $\Atm$ to {\ArchName}:
     &\MID& \key{j}cc~\itm{label} \\
 \end{array}
 }
-
+\fi
+\if\architecture\riscvEd
+\newcommand{\GrammarXIf}{
+\begin{array}{lcl}
+\itm{cc} & ::= & \key{eq} \MID \key{ne} \MID \key{lt} \MID \key{ge} \\
+  \Instr &::=&
+               % \key{xor}~\Arg\key{,}~\Arg\key{,}~\Arg \MID
+               \key{s}cc\key{z} ~\Arg\key{,}~\Arg \MID
+               \key{b}cc ~\Arg\key{,}~\Arg\key{,}~\itm{label} \\
+\end{array}
+}\fi
 
 \begin{figure}[tp]
 \begin{tcolorbox}[colback=white]
@@ -9533,6 +9668,7 @@ $\Atm$ to {\ArchName}:
 \index{subject}{x86if@\LangXIf{} concrete syntax}
 \end{figure}
 
+\if\architecture\xeightysixEd
 \newcommand{\ASTXIfRacket}{
 \begin{array}{lcl}
 \itm{bytereg} &::=& \key{ah} \MID \key{al} \MID \key{bh} \MID \key{bl}
@@ -9562,6 +9698,19 @@ $\Atm$ to {\ArchName}:
        &\MID&  \JMPIF{\itm{cc}}{\itm{label}} 
 \end{array}
 }
+\fi
+\if\architecture\riscvEd
+\newcommand{\ASTXIfPython}{
+\begin{array}{lcl}
+% \Arg &::=&  \gray{\IMM{\Int} \MID \REG{\Reg} \MID \DEREF{\Reg}{\Int}} \\
+\itm{cc} & ::= & \skey{eq} \MID \skey{ne} \MID \skey{lt} \MID \skey{ge} \\
+  \Instr &::=&
+               % \TERINSTR{\scode{xor}}{\Arg}{\Arg}{\Arg} \MID
+             \SETIF{\itm{cc}}{\Arg}{\Arg} \\
+       &\MID& \python{\JMP{\itm{label}}} \MID  \JMPIF{\itm{cc}}{\Arg}{\Arg}{\itm{label}} 
+\end{array}
+}\fi
+
 
 \begin{figure}[tp]
 \begin{tcolorbox}[colback=white]
@@ -9595,8 +9744,10 @@ $\Atm$ to {\ArchName}:
 \index{subject}{x86if@\LangXIf{} abstract syntax}
 \end{figure}
 
-Next we consider the x86 instructions that are relevant for compiling
-the comparison operations. The \key{cmpq} instruction compares its two
+Next we consider the {\ArchName} instructions that are relevant for compiling
+the comparison operations.
+\if\architecture\xeightysixEd
+The \key{cmpq} instruction compares its two
 arguments to determine whether one argument is less than, equal to, or
 greater than the other argument. The \key{cmpq} instruction is unusual
 regarding the order of its arguments and where the result is
@@ -9617,7 +9768,20 @@ move from a single-byte register to a normal 64-bit register.  The
 abstract syntax for the \code{set} instruction differs from the
 concrete syntax in that it separates the instruction name from the
 condition code.
-
+\fi
+\if\architecture\riscvEd
+Comparisons are either reified as boolean values in a register or they
+are hard-wired into conditional branch instructions. A
+branch instruction like $\key{beq}~r_1, r_2, \mathit{label}$ compares
+the two registers $r_1$ and $r_2$ and jumps to \textit{label} if the
+condition (i.e., $r_1 = r_2$) is true. Not all comparison operators
+are directly available. For example, the comparison for less-than-or-equal
+(\code{<=}) has to be implemented by 
+using \key{ge} with the arguments swapped. There is also an unconditional
+jump instruction $\key{j}~\mathit{label}$, which is needed for jumping
+over the code for the else-branch of a conditional.
+\fi
+\if\architecture\xeightysixEd
 \python{The x86 instructions for jumping are relevant to the
   compilation of \key{if} expressions.}
 %
@@ -9632,12 +9796,22 @@ The instruction $\key{j}\itm{cc}~\itm{label}$ updates the program
 counter to point to the instruction after \itm{label}, depending on
 whether the result in the EFLAGS register matches the condition code
 \itm{cc}; otherwise, the jump instruction falls through to the next
-instruction.  Like the abstract syntax for \code{set}, the abstract
+instruction.  Like the abstract syntax for \code{set}, 
+the abstract
 syntax for conditional jump separates the instruction name from the
 condition code. For example, \JMPIF{\QUOTE{\code{le}}}{\QUOTE{\code{foo}}}
 corresponds to \code{jle foo}.  Because the conditional jump instruction
 relies on the EFLAGS register, it is common for it to be immediately preceded by
 a \key{cmpq} instruction to set the EFLAGS register.
+\fi
+\if\architecture\riscvEd
+The abstract syntax for a conditional jump separates the instruction name from the
+condition code. For example, \JMPIF{\QUOTE{\code{lt}}}{$a_1$}{$a_2$}{\QUOTE{\code{foo}}}
+corresponds to \code{jlt $a_1$, $a_2$, foo}. The same holds for the
+conditional set instruction that reifies a condition as a value in a
+register: \SETIF{\QUOTE{\code{lt}}}{$d$}{$s$} corresponds to
+\code{sltz $d$, $s$}.
+\fi
 
 
 \section{Shrink the \LangIf{} Language}
@@ -9662,8 +9836,8 @@ expressing subtraction in terms of addition and negation
 \CBINOP{\key{-}}{e_1}{e_2} \quad \Rightarrow \quad
   \CBINOP{\key{+}}{e_1}{ \CUNIOP{\key{-}}{e_2} }
 \]
-produces code with two x86 instructions (\code{negq} and \code{addq})
-instead of just one (\code{subq}). Thus, we do not recommend
+produces code with two {\ArchName} instructions (\INEG{} and \IADD)
+instead of just one (\ISUB). Thus, we do not recommend
 translating subtraction into addition and negation.
 
 \begin{exercise}\normalfont\normalsize
@@ -9854,6 +10028,7 @@ As a motivating example, consider the following program that has an
 %
 The naive way to compile \key{if} and the comparison operations would
 be to handle each of them in isolation, regardless of their context.
+\if\architecture\xeightysixEd
 Each comparison would be translated into a \key{cmpq} instruction
 followed by several instructions to move the result from the EFLAGS
 register into a general purpose register or stack location. Each
@@ -9875,11 +10050,34 @@ example would be as follows:
 Notice that the three instructions starting with \code{setl} are
 redundant; the conditional jump could come immediately after the first
 \code{cmpq}. 
+\fi
+\if\architecture\riscvEd
+Each comparison would first be translated into a boolean by
+subtracting the arguments and testing the result.
+In this case, the instruction \key{sltz} sets the destination register
+if the source register is less than zero. Instruction \key{bnez}
+branches if its argument is not equal to zero.
+The generated code for the inner \key{if} in this
+example would be as follows:
+\begin{center}
+\begin{minipage}{0.96\textwidth}
+\begin{lstlisting}
+  sub tmp_1, x, $1
+  sltz tmp_2, tmp_1  # set tmp_2 if tmp_1<0
+  bnez tmp_2, then_branch_1
+  j else_branch_1
+\end{lstlisting}
+\end{minipage}
+\end{center}
+Notice that the first two instructions starting with \code{sub} are
+redundant; instead we could generate the conditional jump right away.
+\fi
 
 Our goal is to compile \key{if} expressions so that the relevant
 comparison instruction appears directly before the conditional jump.
 For example, we want to generate the following code for the inner
 \code{if}:
+\if\architecture\xeightysixEd
 \begin{center}
 \begin{minipage}{0.96\textwidth}
 \begin{lstlisting}
@@ -9889,6 +10087,17 @@ For example, we want to generate the following code for the inner
 \end{lstlisting}
 \end{minipage}
 \end{center}
+\fi
+\if\architecture\riscvEd
+\begin{center}
+\begin{minipage}{0.96\textwidth}
+\begin{lstlisting}
+  blt x, $1, then_branch_1
+  j else_branch_1
+\end{lstlisting}
+\end{minipage}
+\end{center}
+\fi
 One way to achieve this goal is to reorganize the code at the level of
 \LangIf{}, pushing the outer \key{if} inside the inner one, yielding
 the following code:
@@ -9911,8 +10120,8 @@ the following code:
 \begin{lstlisting}
  x = input_int()
  y = input_int()
- print(((y + 2) if x == 0 else (y + 10)) \
-       if (x < 1) \
+ print(((y + 2) if x == 0 else (y + 10))
+       if (x < 1)
        else ((y + 2) if (x == 2) else (y + 10)))
 \end{lstlisting}
 \fi}
@@ -9929,7 +10138,7 @@ piece of code?
 The answer is that we must move away from abstract syntax \emph{trees}
 and instead use \emph{graphs}.
 %
-At the level of x86 assembly, this is straightforward because we can
+At the level of {\ArchName} assembly, this is straightforward because we can
 label the code for each branch and insert jumps in all the places that
 need to execute the branch. In this way, jump instructions are edges
 in the graph and the basic blocks are the nodes.
@@ -10643,11 +10852,13 @@ As previously discussed, we encode them as integers.
 \FALSE{} \quad\Rightarrow\quad \key{0}
 \]
 
-For translating statements, we discuss some of the cases.  The
-\code{not} operation can be implemented in terms of \code{xorq}, as we
-discussed at the beginning of this section. Given an assignment, if
+The \code{not} operation can be implemented in terms of \IXOR, as we
+discussed at the beginning of this section.
+For translating statements, we discuss some of the cases.
+\if\architecture\xeightysixEd
+Given an assignment, if
 the left-hand-side variable is the same as the argument of \code{not},
-then just the \code{xorq} instruction suffices.
+then just the \IXOR{} instruction suffices.
 \[
 \CASSIGN{\Var}{ \CUNIOP{\key{not}}{\Var} }
 \quad\Rightarrow\quad
@@ -10664,13 +10875,14 @@ result of translating $\Atm$ to x86.
 \key{xorq}~\key{\$}1\key{,}~\Var
 \end{array}
 \]
+\fi
 
-Next consider the cases for equality comparisons.  Translating this
-operation to x86 is slightly involved due to the unusual nature of the
-\key{cmpq} instruction that we discussed in section~\ref{sec:x86-if}.
+We consider the cases for equality comparisons.  Translating this
+operation to {\ArchName} is slightly involved\ifxeightsix{ due to the unusual nature of the
+\key{cmpq} instruction that we discussed in section~\ref{sec:x86-if}}.
 We recommend translating an assignment with an equality on the
 right-hand side into a sequence of three instructions. Let $\Arg_1$
-be the translation of $\Atm_1$ to x86 and likewise for $\Arg_2$.\\
+be the translation of $\Atm_1$ to {\ArchName} and likewise for $\Arg_2$.\\
 \begin{tabular}{lll}
 \begin{minipage}{0.4\textwidth}
 $\CASSIGN{\Var}{ \LP\CEQ{\Atm_1}{\Atm_2} \RP }$ 
@@ -10679,15 +10891,23 @@ $\CASSIGN{\Var}{ \LP\CEQ{\Atm_1}{\Atm_2} \RP }$
 $\Rightarrow$
 &
 \begin{minipage}{0.4\textwidth}
+\if\architecture\xeightysixEd
 \begin{lstlisting}
 cmpq |$\Arg_2$|, |$\Arg_1$|
 sete %al
 movzbq %al, |$\Var$|
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+sub tmp, |$\Arg_1$|, |$\Arg_2$|
+seqz |$\Var$|, tmp
+\end{lstlisting}
+\fi
 \end{minipage}
 \end{tabular}  \\
 The translations for the other comparison operators are similar to
-this but use different condition codes for the \code{set} instruction.
+this one but use different condition codes for the \code{set} instruction.
 
 \racket{Regarding the $\Tail$ nonterminal, we have two new cases:
   \key{goto} and \key{if} statements. Both are straightforward to
@@ -10695,10 +10915,12 @@ this but use different condition codes for the \code{set} instruction.
 %
 A \key{goto} statement becomes a jump instruction.
 \[
-\key{goto}\; \ell\racket{\key{;}} \quad \Rightarrow \quad \key{jmp}\;\ell
+  \key{goto}\; \ell\racket{\key{;}} \quad \Rightarrow \quad
+  \ifxeightsix{\key{jmp}\;\ell}
+  \ifriscv{\key{j}\;\ell}
 \]
 %
-An \key{if} statement becomes a compare instruction followed by a
+An \key{if} statement becomes \ifxeightsix{a compare instruction followed by} a
 conditional jump (for the \emph{then} branch), and the fall-through is to
 a regular jump (for the \emph{else} branch). Again, $\Arg_1$ and $\Arg_2$
 are the translations of $\Atm_1$ and $\Atm_2$, respectively.\\
@@ -10715,18 +10937,26 @@ else|$\python{\key{:}}$|
 $\Rightarrow$
 &
 \begin{minipage}{0.4\textwidth}
+\if\architecture\xeightysixEd
 \begin{lstlisting}
 cmpq |$\Arg_2$|, |$\Arg_1$|
 je |$\ell_1$|
 jmp |$\ell_2$|
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+beq |$\Arg_1$|, |$\Arg_2$|, |$\ell_1$|
+jmp |$\ell_2$|
+\end{lstlisting}
+\fi
 \end{minipage}
 \end{tabular}  \\
 Again, the translations for the other comparison operators are similar to this
 but use different condition codes for the conditional jump instruction.
 
 \python{Regarding the \key{return} statement, we recommend treating it
-  as an assignment to the \key{rax} register followed by a jump to the
+  as an assignment to the \RAX{} register followed by a jump to the
   conclusion of the \code{main} function. (See section~\ref{sec:prelude-conclusion-cond} for more about the conclusion of \code{main}.)}
 
 \begin{exercise}\normalfont\normalsize
@@ -10818,7 +11048,7 @@ instruction and associate that with the block's label in the
 {\if\edition\pythonEd\pythonColor
 %
 The next question is how to analyze jump instructions.  The locations
-that are live before a \code{jmp} should be the locations in
+that are live before a jump should be the locations in
 $L_{\mathsf{before}}$ at the target of the jump. So we recommend
 maintaining a dictionary named \code{live\_before\_block} that maps each
 label to the $L_{\mathsf{before}}$ for the first instruction in its
@@ -10829,7 +11059,7 @@ block's label in the \code{live\_before\_block} dictionary.
 \fi}
 
 In \LangXIfVar{} we also have the conditional jump
-$\JMPIF{\itm{cc}}{\itm{label}}$ to deal with.  Liveness analysis for
+$\JMPIF{\itm{cc}}{\Arg_1}{\Arg_2}{\itm{label}}$ to deal with.  Liveness analysis for
 this instruction is particularly interesting because during
 compilation, we do not know which way a conditional jump will go. Thus
 we do not know whether to use the live-before set for the block
@@ -10871,7 +11101,7 @@ program.
 \subsection{Build the Interference Graph}
 \label{sec:build-interference-Lif}
 
-Many of the new instructions in \LangXIfVar{} can be handled in the
+\ifxeightsix{Many of the}\ifriscv{The} new instructions in \LangXIfVar{} can be handled in the
 same way as the instructions in \LangXVar{}.
 % Thus, if your code was
 % already quite general, it will not need to be changed to handle the
@@ -10880,9 +11110,11 @@ same way as the instructions in \LangXVar{}.
 % out the computing of the the read and write sets for each kind of
 % instruction into auxiliary functions.
 %
+\if\architecture\xeightysixEd
 Some instructions, such as the \key{movzbq} instruction, require special care,
 similar to the \key{movq} instruction. Refer to rule number 1 in
 section~\ref{sec:build-interference}.
+\fi
 
 \begin{exercise}\normalfont\normalsize
 Update the \code{build\_interference} pass for \LangXIfVar{}.
@@ -10901,6 +11133,7 @@ Add the following entries to the list of \code{passes} in the
 
 \section{Patch Instructions}
 
+\if\architecture\xeightysixEd
 The new instructions \key{cmpq} and \key{movzbq} have some special
 restrictions that need to be handled in the \code{patch\_instructions}
 pass.
@@ -10915,6 +11148,11 @@ update it for \LangIf{} and then this situation would not arise.
 As usual, \key{cmpq} may have at most one memory reference.
 %
 The second argument of the \key{movzbq} must be a register.
+\fi
+\if\architecture\riscvEd
+No particular issues arise with the new instructions. As usual,
+immediate operands and memory operands have to be resolved to register
+when translating from  \LangXIf{} to actual assembly code.
 
 \begin{exercise}\normalfont\normalsize
 %
@@ -11056,6 +11294,7 @@ block_2:
 
 \end{lstlisting}
 $\Downarrow$
+\if\architecture\xeightysixEd
 \begin{lstlisting}
 
 
@@ -11077,10 +11316,35 @@ block_2:
 	movq 0, %rax
 	jmp conclusion        
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+
+
+start:
+	call read_int
+	mv tmp_0, a0
+        mv tmp_1, $1
+	beq tmp_0, tmp_1, block_3
+	j block_4
+block_3:
+	mv tmp_1, $42
+	j block_2
+block_4:
+	mv tmp_1, $0
+	j block_2
+block_2:
+	mv a0, tmp_1
+	call print_int
+	mv a0, $0
+	jmp conclusion        
+\end{lstlisting}
+\fi
 \end{minipage}
 &
 $\Rightarrow\qquad$
 \begin{minipage}{0.4\textwidth}
+\if\architecture\xeightysixEd
 \begin{lstlisting}
 	.globl main
 main:
@@ -11110,14 +11374,47 @@ conclusion:
 	popq %rbp
 	retq
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+	.globl main
+main:
+        addi sp, sp, -16
+        sd ra, 8(sp)
+        sd fp, 0(sp)
+        addi fp, sp, 16
+	j start
+start:
+	call read_int
+        li t1, 1
+	beq a0, t1, block_3
+	j block_4
+block_3:
+	li t1, 42
+	j block_2
+block_4:
+	li t1, 0
+	j block_2
+block_2:
+	mv a0, tmp_1
+	call print_int
+	li a0, 0
+	jmp conclusion        
+conclusion:
+        ld fp, 0(sp)
+        ld ra, 8(sp)
+        addi sp, sp, 16
+	ret
+\end{lstlisting}
+\fi
 \end{minipage}
 \end{tabular}
 \fi}
 \end{tcolorbox}
 
-  \caption{Example compilation of an \key{if} expression to x86, showing
+  \caption{Example compilation of an \key{if} expression to \ArchName, showing
   the results of \code{explicate\_control},
-  \code{select\_instructions}, and the final x86 assembly code.  }
+  \code{select\_instructions}, and the final \ArchName{} assembly code.  }
 \label{fig:if-example-x86}
 \end{figure}
 
@@ -11630,6 +11927,7 @@ start:
 \end{tabular}
 \fi}
 {\if\edition\pythonEd\pythonColor
+  {\if\architecture\xeightysixEd
 \begin{tabular}{lll}
 \begin{minipage}{0.5\textwidth}
 % cond_test_20.rkt
@@ -11675,6 +11973,52 @@ block_2:
 \end{lstlisting}
 \end{minipage}
 \end{tabular}
+\fi}
+{\if\architecture\riscvEd
+\begin{tabular}{lll}
+\begin{minipage}{0.5\textwidth}
+% cond_test_20.rkt
+\begin{lstlisting}
+start:
+	call read_int
+        li t1, 1
+	beq a0, t1, block_3
+	j block_4
+block_3:
+	li t1, 42
+	j block_2
+block_4:
+	li t1, 0
+	j block_2
+block_2:
+	mv a0, tmp_1
+	call print_int
+	li a0, 0
+	jmp conclusion        
+\end{lstlisting}
+\end{minipage}
+&
+$\Rightarrow\qquad$
+\begin{minipage}{0.4\textwidth}
+\begin{lstlisting}
+start:
+	call read_int
+        li t1, 1
+	beq a0, t1, block_3
+	li t1, 0
+	j block_2
+block_3:
+	li t1, 42
+	j block_2
+block_2:
+	mv a0, tmp_1
+	call print_int
+	li a0, 0
+	jmp conclusion        
+\end{lstlisting}
+\end{minipage}
+\end{tabular}
+\fi}
 \fi}
 \end{tcolorbox}
 

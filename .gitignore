@@ -8,6 +8,7 @@ auto/
 *.idx
 *.ilg
 *.ind
+*.rel
 *.log
 *.out
 *.run.xml
