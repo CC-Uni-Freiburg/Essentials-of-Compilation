@@ -2735,9 +2735,9 @@ is stored immediately after the return address.
 Figure~\ref{fig:frame} shows the memory layout of a frame with storage
 for $n$ variables, which are numbered from $1$ to $n$. Variable $1$ is
 stored at address
-\ifxeightsix{$-8\key{(\%rbp)}$}\ifriscv{$-16(\key{fp})$},
+\ifxeightsix{$-8\key{(\%rbp)}$}\ifriscv{$-24(\key{fp})$},
 variable $2$ at
-\ifxeightsix{$-16\key{(\%rbp)}$}\ifriscv{$-24(\key{fp})$}, and so on.
+\ifxeightsix{$-16\key{(\%rbp)}$}\ifriscv{$-32(\key{fp})$}, and so on.
 
 \begin{figure}[tbp]
   \begin{minipage}{0.66\textwidth}
