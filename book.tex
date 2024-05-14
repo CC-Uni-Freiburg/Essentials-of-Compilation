@@ -9471,7 +9471,9 @@ abstract syntax.
      \MID \CBINOP{\key{-}}{\Atm}{\Atm}
      \MID \CCMP{\itm{cmp}}{\Atm}{\Atm} \\
 \Stmt &::=& \CPRINT{\Atm} \MID \Exp \MID \CASSIGN{\Var}{\Exp}  \\
-\Tail &::=& \CRETURN{\Exp} \MID \CGOTO{\itm{label}} \\
+  \Tail &::=&
+              \ifxeightsix{\CRETURN{\Exp} \MID}
+              \CGOTO{\itm{label}} \\
     &\MID& \CIFSTMT{\CCMP{\itm{cmp}}{\Atm}{\Atm}}{\CGOTO{\itm{label}}}{\CGOTO{\itm{label}}} 
 \end{array}
 }
@@ -9485,7 +9487,9 @@ abstract syntax.
      &\MID& \CMP{\Atm}{\itm{cmp}}{\Atm} \\
 \Stmt &::=& \PRINT{\Atm} \MID \EXPR{\Exp} \\
      &\MID& \ASSIGN{\VAR{\Var}}{\Exp}  \\
-\Tail &::= & \RETURN{\Exp} \MID \GOTO{\itm{label}} \\
+  \Tail &::= &
+               \ifxeightsix{\RETURN{\Exp} \MID}
+               \GOTO{\itm{label}} \\
      &\MID& \IFSTMT{\CMP{\Atm}{\itm{cmp}}{\Atm}}{\LS\GOTO{\itm{label}}\RS}{\LS\GOTO{\itm{label}}\RS}
 \end{array}
 }
@@ -9927,8 +9931,9 @@ upcoming \code{explicate\_control} pass.
 \Atm &::=& \BOOL{\itm{bool}}\\
 \Exp &::=& \UNIOP{\key{Not()}}{\Exp}
            \MID \CMP{\Atm}{\itm{cmp}}{\Atm} \\
-   &\MID& \IF{\Exp}{\Exp}{\Exp} 
-    \MID \BEGIN{\Stmt^{*}}{\Exp}\\
+     &\MID&
+            % \IF{\Exp}{\Exp}{\Exp} \MID
+            \BEGIN{\Stmt^{*}}{\Exp}\\
 \Stmt{} &::=& \IFSTMT{\Exp}{\Stmt^{*}}{\Stmt^{*}}
 \end{array}
 }
@@ -10947,7 +10952,7 @@ jmp |$\ell_2$|
 \if\architecture\riscvEd
 \begin{lstlisting}
 beq |$\Arg_1$|, |$\Arg_2$|, |$\ell_1$|
-jmp |$\ell_2$|
+j |$\ell_2$|
 \end{lstlisting}
 \fi
 \end{minipage}
@@ -10955,9 +10960,10 @@ jmp |$\ell_2$|
 Again, the translations for the other comparison operators are similar to this
 but use different condition codes for the conditional jump instruction.
 
-\python{Regarding the \key{return} statement, we recommend treating it
+
+\python{\ifxeightsix{Regarding the \key{return} statement, we recommend treating it
   as an assignment to the \RAX{} register followed by a jump to the
-  conclusion of the \code{main} function. (See section~\ref{sec:prelude-conclusion-cond} for more about the conclusion of \code{main}.)}
+  conclusion of the \code{main} function. (See section~\ref{sec:prelude-conclusion-cond} for more about the conclusion of \code{main}.)}}
 
 \begin{exercise}\normalfont\normalsize
 Expand your \code{select\_instructions} pass to handle the new
