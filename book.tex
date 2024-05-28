@@ -12506,6 +12506,7 @@ block8:
   \end{minipage}
 \fi}
 {\if\edition\pythonEd\pythonColor
+{\if\architecture\xeightysixEd
 \begin{minipage}{0.45\textwidth}
 \begin{lstlisting}
 mainstart:
@@ -12530,14 +12531,41 @@ block8:
     movq $0, %rax
     jmp mainconclusion
 \end{lstlisting}
-  \end{minipage}
+\end{minipage}
+\fi}
+{\if\architecture\riscvEd
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}
+mainstart:
+    move sum, $0
+    move i, $5
+    jmp block5
+block5:
+    blt $0, i, block7
+    j block8
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}
+block7:
+    add i, i, sum
+    sub i, i, $1
+    j block5
+block8:
+    move a0, sum
+    call print_int
+    move a0, $0
+    jmp mainconclusion
+\end{lstlisting}
+\end{minipage}
+\fi}
 \fi}
 \end{center}
 Recall that liveness analysis works backward, starting at the end
 of each function. For this example we could start with \code{block8}
 because we know what is live at the beginning of the conclusion:
-only \code{rax} and \code{rsp}. So the live-before set
-for \code{block8} is \code{\{rsp,sum\}}.
+only \RAX{} and \SP{}. So the live-before set
+for \code{block8} is \code{\{\SP,sum\}}.
 %
 Next we might try to analyze \code{block5} or \code{block7}, but
 \code{block5} jumps to \code{block7} and vice versa, so it seems that
@@ -12573,40 +12601,67 @@ Using the above live-before approximations, we determine the
 live-after for each block and then apply liveness analysis to each
 block.  This produces our next approximation $m_1$ of the live-before
 sets.
+{\if\architecture\xeightysixEd
 \begin{center}
   \begin{lstlisting}
 mainstart: {}, block5: {i}, block7: {i, sum}, block8: {rsp, sum}
 \end{lstlisting}
 \end{center}
+\fi}
+{\if\architecture\riscvEd
+\begin{center}
+  \begin{lstlisting}
+mainstart: {}, block5: {i}, block7: {i, sum}, block8: {sp, sum}
+\end{lstlisting}
+\end{center}
+\fi}
 
 For the second round, the live-after for \code{mainstart} is the
 current live-before for \code{block5}, which is \code{\{i\}}.  Therefore
 the liveness analysis for \code{mainstart} computes the empty set. The
 live-after for \code{block5} is the union of the live-before sets for
-\code{block7} and \code{block8}, which is \code{\{i, rsp, sum\}}.
+\code{block7} and \code{block8}, which is \code{\{i, \SP, sum\}}.
 So the liveness analysis for \code{block5} computes \code{\{i, rsp,
   sum\}}.  The live-after for \code{block7} is the live-before for
 \code{block5} (from the previous iteration), which is \code{\{i\}}.
 So the liveness analysis for \code{block7} remains \code{\{i, sum\}}.
 Together these yield the following approximation $m_2$ of
 the live-before sets:
+{\if\architecture\xeightysixEd
 \begin{center}
   \begin{lstlisting}
 mainstart: {}, block5: {i, rsp, sum}, block7: {i, sum}, block8: {rsp, sum}
 \end{lstlisting}
 \end{center}
+\fi}
+{\if\architecture\riscvEd
+\begin{center}
+  \begin{lstlisting}
+mainstart: {}, block5: {i, sp, sum}, block7: {i, sum}, block8: {sp, sum}
+\end{lstlisting}
+\end{center}
+\fi}
 In the preceding iteration, only \code{block5} changed, so we can
 limit our attention to \code{mainstart} and \code{block7}, the two
 blocks that jump to \code{block5}.  As a result, the live-before sets
 for \code{mainstart} and \code{block7} are updated to include
-\code{rsp}, yielding the following approximation $m_3$:
+\SP, yielding the following approximation $m_3$:
+{\if\architecture\xeightysixEd
 \begin{center}
   \begin{lstlisting}
 mainstart: {rsp}, block5: {i,rsp,sum}, block7: {i,rsp,sum}, block8: {rsp,sum}
 \end{lstlisting}
 \end{center}
+\fi}
+{\if\architecture\riscvEd
+\begin{center}
+  \begin{lstlisting}
+mainstart: {sp}, block5: {i,sp,sum}, block7: {i,sp,sum}, block8: {sp,sum}
+\end{lstlisting}
+\end{center}
+\fi}
 Because \code{block7} changed, we analyze \code{block5} once more, but
-its live-before set remains \code{\{i,rsp,sum\}}.  At this point
+its live-before set remains \code{\{i,\SP,sum\}}.  At this point
 our approximations have converged, so $m_3$ is the solution.
 
 This iteration process is guaranteed to converge to a solution by the
