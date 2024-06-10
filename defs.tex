@@ -82,8 +82,10 @@
 \if\architecture\xeightysixEd
 \newcommand{\ArchName}{x86}
 \newcommand{\ARCHNAME}{X86}
+\newcommand{\ISRL}{\code{sarq}}
 \newcommand{\INEG}{\code{negq}}
 \newcommand{\IXOR}{\code{xorq}}
+\newcommand{\IAND}{\code{andq}}
 \newcommand{\IADD}{\code{addq}}
 \newcommand{\ISUB}{\code{subq}}
 \newcommand{\ICALL}{\code{callq}}
@@ -92,13 +94,16 @@
 \newcommand{\SP}{\code{rsp}}
 \newcommand{\FP}{\code{rbp}}
 \newcommand{\RAX}{\code{rax}}
+\newcommand{\ROOTSP}{\code{r15}}
 \fi
 \if\architecture\riscvEd
 \newcommand{\ArchName}{RISC-V}
 \newcommand{\ARCHNAME}{RISCV}
+\newcommand{\ISRL}{\code{srl}}
 \newcommand{\INEG}{\code{neg}}
 \newcommand{\IXOR}{\code{xor}}
 \newcommand{\IADD}{\code{add}}
+\newcommand{\IAND}{\code{and}}
 \newcommand{\ISUB}{\code{sub}}
 \newcommand{\ICALL}{\code{call}}
 \newcommand{\IMOVE}{\code{mv}}
@@ -106,6 +111,7 @@
 \newcommand{\SP}{\code{sp}}
 \newcommand{\FP}{\code{fp}}
 \newcommand{\RAX}{\code{a0}}
+\newcommand{\ROOTSP}{\code{s11}}
 \fi
 
 \newcommand{\LangXVar}{$\mathrm{{\ArchName}}_{\mathsf{Var}}$} % pseudo {\ArchName}_0
