@@ -14040,8 +14040,9 @@ tuple. Figure~\ref{fig:tuple-rep} shows a zoomed-in view of the tags for
 two of the tuples in the example given in figure~\ref{fig:copying-collector}.
 Note that we have drawn the bits in a big-endian way, from right to left,
 with bit location 0 (the least significant bit) on the far right,
-which corresponds to the direction of the x86 shifting instructions
-\key{salq} (shift left) and \key{sarq} (shift right). Part of each tag
+which corresponds to the direction of the \ArchName{} shifting instructions
+\ifxeightsix{\key{salq} (shift left) and \key{sarq} (shift right)}%
+\ifriscv{\key{sll} (shift left) and \key{srl} (shift right)}. Part of each tag
 is dedicated to specifying which elements of the tuple are pointers,
 the part labeled \emph{pointer mask}. Within the pointer mask, a 1 bit
 indicates that there is a pointer, and a 0 bit indicates some other kind of
@@ -14545,7 +14546,7 @@ section.
 %% vector-length
 %% global (postpone)
 
-In this pass we generate x86 code for most of the new operations that
+In this pass we generate {\ArchName} code for most of the new operations that
 are needed to compile tuples, including \code{Allocate},
 \code{Collect}, accessing tuple elements, and the \code{Is}
 comparison.
@@ -14554,7 +14555,7 @@ We compile \code{GlobalValue} to \code{Global} because the latter has a
 different concrete syntax (see figures~\ref{fig:x86-2-concrete} and
 \ref{fig:x86-2}).  \index{subject}{x86}
 
-The tuple read and write forms translate into \code{movq}
+The tuple read and write forms translate into \IMOVE{}
 instructions.  (The $+1$ in the offset serves to move past the tag at the
 beginning of the tuple representation.)
 %
@@ -14574,7 +14575,8 @@ beginning of the tuple representation.)
    movq $0, |$\itm{lhs'}$|
 \end{lstlisting}
 \fi}
-{\if\edition\pythonEd\pythonColor    
+{\if\edition\pythonEd\pythonColor
+{\if\architecture\xeightysixEd
 \begin{lstlisting}
    |$\itm{lhs}$| = |$\itm{tup}$|[|$n$|]
    |$\Longrightarrow$|
@@ -14586,42 +14588,75 @@ beginning of the tuple representation.)
    movq |$\itm{tup}'$|, %r11
    movq |$\itm{rhs}'$|, |$8(n+1)$|(%r11)
 \end{lstlisting}
+  \fi}
+{\if\architecture\riscvEd
+\begin{lstlisting}
+   |$\itm{lhs}$| = |$\itm{tup}$|[|$n$|]
+   |$\Longrightarrow$|
+   mv  a1, |$\itm{tup}'$|
+   mv |$\itm{lhs'}$|, |$8(n+1)$|(a1)
+
+   |$\itm{tup}$|[|$n$|] = |$\itm{rhs}$|
+   |$\Longrightarrow$|
+   mv a1, |$\itm{tup}'$|
+   mv |$8(n+1)$|(a1), |$\itm{rhs}'$|
+\end{lstlisting}
+  \fi}
 \fi}
 \end{minipage}
 \end{center}
 \racket{The $\itm{lhs}'$, $\itm{tup}'$, and $\itm{rhs}'$}
 \python{The $\itm{tup}'$ and $\itm{rhs}'$}
-are obtained by translating from \LangCVec{} to x86.
+are obtained by translating from \LangCVec{} to \ArchName.
 %
 The move of $\itm{tup}'$ to
-register \code{r11} ensures that the offset expression
-\code{$8(n+1)$(\%r11)} contains a register operand.  This requires
-removing \code{r11} from consideration by the register allocator.
+register \ifxeightsix{\code{r11}}\ifriscv{\code{a1}} ensures that the offset expression
+\ifxeightsix{\code{$8(n+1)$(\%r11)}}
+\ifriscv{\code{$8(n+1)$(\%a1)}}
+contains a register operand.  This requires
+removing \ifxeightsix{\code{r11}}\ifriscv{\code{a1}} from consideration by the register allocator.
 
-Why not use \code{rax} instead of \code{r11}? Suppose that we instead used
-\code{rax}. Then the generated code for tuple assignment would be
+Why not use \RAX{} instead of \ifxeightsix{\code{r11}}\ifriscv{\code{a1}}? Suppose that we instead used
+\RAX. Then the generated code for tuple assignment would be
+{\if\architecture\xeightysixEd
 \begin{lstlisting}
   movq |$\itm{tup}'$|, %rax
   movq |$\itm{rhs}'$|, |$8(n+1)$|(%rax)
 \end{lstlisting}
+  \fi}
+{\if\architecture\riscvEd
+\begin{lstlisting}
+  mv a0, |$\itm{tup}'$|
+  mv |$8(n+1)$|(a0), |$\itm{rhs}'$|
+\end{lstlisting}
+  \fi}
 Next, suppose that $\itm{rhs}'$ ends up as a stack location, so
-\code{patch\_instructions} would insert a move through \code{rax}
+\code{patch\_instructions} would insert a move through \RAX{}
 as follows:
+{\if\architecture\xeightysixEd
 \begin{lstlisting}
    movq |$\itm{tup}'$|, %rax
    movq |$\itm{rhs}'$|, %rax
    movq %rax, |$8(n+1)$|(%rax)
 \end{lstlisting}
+  \fi}
+{\if\architecture\riscvEd
+\begin{lstlisting}
+   mv a0, |$\itm{tup}'$|
+   mv a0, |$\itm{rhs}'$|
+   mv |$8(n+1)$|(a0), a0
+\end{lstlisting}
+  \fi}
 However, this sequence of instructions does not work because we're
-trying to use \code{rax} for two different values ($\itm{tup}'$ and
+trying to use \RAX{} for two different values ($\itm{tup}'$ and
 $\itm{rhs}'$) at the same time!
 
 The \racket{\code{vector-length}}\python{\code{len}} operation should
 be translated into a sequence of instructions that read the tag of the
 tuple and extract the 6 bits that represent the tuple length, which
 are the bits starting at index 1 and going up to and including bit 6.
-The x86 instructions \code{andq} (for bitwise-and) and \code{sarq}
-(shift right) can be used to accomplish this.
+The \ArchName{} instructions \IAND{} (for bitwise-and) and \ISRL{}
+(shift right) can accomplish this.
 
 We compile the \code{allocate} form to operations on the
 \code{free\_ptr}, as shown next.  This approach is called
@@ -14629,11 +14664,11 @@ We compile the \code{allocate} form to operations on the
 function call by simply incrementing the allocation pointer. It is much
 more efficient than calling a function for each allocation. The
 address in the \code{free\_ptr} is the next free address in the
-FromSpace, so we copy it into \code{r11} and then move it forward by
+FromSpace, so we copy it into \ifxeightsix{\code{r11}}\ifriscv{\code{a1}} and then move it forward by
 enough space for the tuple being allocated, which is $8(\itm{len}+1)$
 bytes because each element is 8 bytes (64 bits) and we use 8 bytes for
 the tag.  We then initialize the \itm{tag} and finally copy the
-address in \code{r11} to the left-hand side. Refer to
+address in \ifxeightsix{\code{r11}}\ifriscv{\code{a1}} to the left-hand side. Refer to
 figure~\ref{fig:tuple-rep} to see how the tag is organized.
 %
 \racket{We recommend using the Racket operations
@@ -14646,7 +14681,8 @@ during compilation.}
 %
 The type annotation in the \code{allocate} form is used to determine
 the pointer mask region of the tag.
-%
+
+{\if\architecture\xeightysixEd
 The addressing mode \verb!free_ptr(%rip)! essentially stands for the
 address of the \code{free\_ptr} global variable using a special
 instruction-pointer-relative addressing mode of the x86-64 processor.
@@ -14675,13 +14711,31 @@ moment and then changes the \code{free\_ptr(\%rip)} argument to
    movq $|$\itm{tag}$|, 0(%r11)
    movq %r11, |$\itm{lhs}'$|
 \end{lstlisting}
+  \fi}
 \fi}
+{\if\architecture\riscvEd
+  The instruction \code{la} (load address) is a pseudo instruction
+  that loads the address of a global variable in a register. A
+  standard load instruction obtains the value of the global variable
+  from that address. 
+\begin{lstlisting}
+   |$\itm{lhs}$| = allocate(|$\itm{len}$|, TupleType([|$\itm{type}, \ldots$])|);
+   |$\Longrightarrow$|
+   la a2, free_ptr        # a2 = address of free_ptr
+   ld a1, 0(a2)           # a1 = value of free_ptr
+   addi a0, a1, |$8(\itm{len}+1)$|
+   sd 0(a2), a0           # save updated free_ptr
+   li a2, |$\itm{tag}$|
+   sd 0(a1), a2           # set tag at offset 0
+   mv |$\itm{lhs}'$|, a1            # return pointer to tuple
+\end{lstlisting}
+  \fi}
 %
 The \code{collect} form is compiled to a call to the \code{collect}
 function in the runtime. The arguments to \code{collect} are (1) the
 top of the root stack, and (2) the number of bytes that need to be
-allocated.  We use another dedicated register, \code{r15}, to store
-the pointer to the top of the root stack. Therefore \code{r15} is not
+allocated.  We use another dedicated register, \ifxeightsix{\code{r15}}\ifriscv{\code{s11}}, to store
+the pointer to the top of the root stack. Therefore \ifxeightsix{\code{r15}}\ifriscv{\code{s11}} is not
 available for use by the register allocator.
 %
 {\if\edition\racketEd
@@ -14694,6 +14748,7 @@ available for use by the register allocator.
 \end{lstlisting}
 \fi}
 {\if\edition\pythonEd\pythonColor    
+{\if\architecture\xeightysixEd
 \begin{lstlisting}
    collect(|$\itm{bytes}$|)
    |$\Longrightarrow$|
@@ -14701,6 +14756,16 @@ available for use by the register allocator.
    movq $|\itm{bytes}|, %rsi
    callq collect
 \end{lstlisting}
+  \fi}
+{\if\architecture\riscvEd
+\begin{lstlisting}
+   collect(|$\itm{bytes}$|)
+   |$\Longrightarrow$|
+   mv a0, s11
+   mv a1, $|\itm{bytes}|
+   call collect
+\end{lstlisting}
+  \fi}
 \fi}
 
 {\if\edition\pythonEd\pythonColor    
@@ -14716,11 +14781,19 @@ $\CASSIGN{\Var}{ \LP\CIS{\Atm_1}{\Atm_2} \RP }$
 $\Rightarrow$
 &
 \begin{minipage}{0.4\textwidth}
+{\if\architecture\xeightysixEd
 \begin{lstlisting}
 cmpq |$\Arg_2$|, |$\Arg_1$|
 sete %al
 movzbq %al, |$\Var$|
 \end{lstlisting}
+  \fi}
+{\if\architecture\riscvEd
+\begin{lstlisting}
+sub a0, |$\Arg_2$|, |$\Arg_1$|
+sltu |$\Var$|, a0, $1
+\end{lstlisting}
+  \fi}
 \end{minipage}
 \end{tabular}
 \fi}
@@ -14904,7 +14977,7 @@ block6:
 \end{minipage}
 \end{tabular}
 \fi}
-{\if\edition\pythonEd    
+{\if\edition\pythonEd
 % tests/tuple/get_get.py
 \begin{tabular}{lll}
 \begin{minipage}{0.5\textwidth}
@@ -14956,7 +15029,8 @@ block.525:
     return 0
 \end{lstlisting}
 \end{minipage}
-&$\Rightarrow$&
+  &$\Rightarrow$&
+{\if\architecture\xeightysixEd
 \begin{minipage}{0.4\textwidth}
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
 start:
@@ -15024,6 +15098,80 @@ block.525:
     jmp conclusion
 \end{lstlisting}
 \end{minipage}
+\fi}
+{\if\architecture\riscvEd
+\begin{minipage}{0.4\textwidth}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+start:
+    mv init.514, $42
+    la %a1, free_ptr
+    ld tmp.517, 0(%a1)
+    add tmp.518, tmp.517, $16
+    la %a1, fromspace_end
+    ld tmp.519, 0(%a1)
+    blt tmp.518, tmp.519, block.529
+    j block.530
+    
+block.529:
+    j block.528
+
+block.530:
+    mv %a0, %s11
+    mv %a1, $16
+    call collect
+    j block.528
+
+block.528:
+    la %a2, free_ptr
+    ld %a1, 0(%a2)
+    addi %a0, %a1, $16
+    sd 0(%a2), %a0
+    li %a2, $3
+    sd 0(%a1), %a0
+    mv alloc.513, %a1
+    mv %a1, alloc.513
+    sd 8(%a1), alloc.514
+    mv v1, alloc.513
+    mv init.516, v1
+    la %a1, free_ptr
+    ld tmp.520, 0(%a1)
+    addi tmp.521, tmp.520, $16
+    la %a1, fromspace_end
+    ld tmp.522, 0(%a1)
+    blt tmp.521, tmp.522, block.526
+    j block.527
+
+block.526:
+    j block.525
+
+block.527:
+    mv %a0, %s11
+    mv %a1, $16
+    call collect
+    j block.525
+
+block.525:
+    la %a2, free_ptr
+    ld %a1, 0(%a2)
+    addi %a0, %a1, $16
+    sd 0(%a2), %a0
+    li %a2, $131
+    sd 0(%a1), %a2
+    mv alloc.515, %a1
+    mv %a1, alloc.515
+    sd 8(%a1), init.516
+    mv v2, alloc.515
+    mv %a0, v2
+    ld tmp.523, 8(%a0)
+    mv %a0, tmp.523
+    ld tmp.524, 8(%a0)
+    mv %a0, tmp.524
+    call print_int
+    mv %a0, $0
+    j conclusion
+\end{lstlisting}
+\end{minipage}
+\fi}
 \end{tabular}
 \fi}
 \end{tcolorbox}
@@ -15094,10 +15242,10 @@ Figure~\ref{fig:print-x86-output-gc} shows the output of the
 \code{prelude\_and\_conclusion} pass on the running example. In the
 prelude of the \code{main} function, we allocate space
 on the root stack to make room for the spills of tuple-typed
-variables. We do so by incrementing the root stack pointer (\code{r15}),
+variables. We do so by incrementing the root stack pointer (\ROOTSP),
 taking care that the root stack grows up instead of down.  For the
-running example, there was just one spill, so we increment \code{r15}
-by 8 bytes. In the conclusion we subtract 8 bytes from \code{r15}.
+running example, there was just one spill, so we increment \ROOTSP{}
+by 8 bytes. In the conclusion we subtract 8 bytes from \ROOTSP.
 
 One issue that deserves special care is that there may be a call to
 \code{collect} prior to the initializing assignments for all the
@@ -15107,7 +15255,12 @@ needs to be followed. Thus, we zero out all locations on the root
 stack in the prelude of \code{main}. In
 figure~\ref{fig:print-x86-output-gc}, the instruction
 %
+{\if\architecture\xeightysixEd
 \lstinline{movq $0, 0(%r15)}
+\fi}
+{\if\architecture\riscvEd
+\lstinline{mv 0(s11), $0}
+\fi}
 %
 is sufficient to accomplish this task because there is only one spill.
 In general, we have to clear as many words as there are spills of
@@ -15141,6 +15294,7 @@ conclusion:
 \end{minipage}
     \fi}
 {\if\edition\pythonEd    
+{\if\architecture\xeightysixEd
 \begin{minipage}[t]{0.5\textwidth}
 \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
     .globl main
@@ -15165,6 +15319,35 @@ conclusion:
     retq 
 \end{lstlisting}
 \end{minipage}
+\fi}
+{\if\architecture\riscvEd
+\begin{minipage}[t]{0.5\textwidth}
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+    .globl main
+main:
+    addi sp, sp, -32
+    sd ra, 24(sp)
+    sd fp, 16(sp)
+    sd s2, 8(sp)
+    li a1, 65536
+    li a0, 16
+    call initialize
+    la s11, rootstack_begin
+    ld s11, 0(s11)
+    sd zero, 0(s11)
+    addi s11, s11, 8
+    j start
+
+conclusion:
+    addi s11, s1, -8
+    ld s2, 8(sp)
+    ld fp, 16(sp)
+    ld ra, 24(sp)
+    addi sp, sp, 32
+    ret
+\end{lstlisting}
+\end{minipage}
+\fi}
 \fi}
   \end{tcolorbox}
 
