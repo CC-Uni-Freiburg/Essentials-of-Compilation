@@ -95,6 +95,9 @@
 \newcommand{\FP}{\code{rbp}}
 \newcommand{\RAX}{\code{rax}}
 \newcommand{\ROOTSP}{\code{r15}}
+\newcommand{\ILEA}{\code{leaq}}
+\newcommand{\FIVE}{5}
+\newcommand{\SIX}{6}
 \fi
 \if\architecture\riscvEd
 \newcommand{\ArchName}{RISC-V}
@@ -112,6 +115,9 @@
 \newcommand{\FP}{\code{fp}}
 \newcommand{\RAX}{\code{a0}}
 \newcommand{\ROOTSP}{\code{s11}}
+\newcommand{\ILEA}{\code{la}}
+\newcommand{\FIVE}{7}
+\newcommand{\SIX}{8}
 \fi
 
 \newcommand{\LangXVar}{$\mathrm{{\ArchName}}_{\mathsf{Var}}$} % pseudo {\ArchName}_0
@@ -435,7 +441,6 @@
 \newcommand{\XVAR}[1]{\key{Variable}\LP #1 \RP}
 \newcommand{\CGDEF}[4]{\key{def}~#1\LP #2 \RP~#3 \code{:}~#4}
 \newcommand{\TAILJMP}[2]{\key{TailJmp}\LP#1\code{, }#2\RP}
-\newcommand{\INDCALLQ}[2]{\key{IndirectCallq}\LP#1\code{, }#2\RP}
 \newcommand{\IMM}[1]{\key{Immediate}\LP #1\RP}
 \newcommand{\REG}[1]{\key{Reg}\LP #1\RP}
 \newcommand{\DEREF}[2]{\key{Deref}\LP #1 \key{,} #2 \RP}
@@ -446,11 +451,13 @@
 \newcommand{\POPQ}[1]{\key{Instr}\LP \skey{popq} \key{,} \LS #1 \RS \RP}
 \newcommand{\JMP}[1]{\key{Jump}\LP #1 \RP}
 \if\architecture\xeightysixEd
+\newcommand{\INDCALLQ}[2]{\key{IndirectCallq}\LP#1\code{, }#2\RP}
 \newcommand{\JMPIF}[2]{\key{JumpIf}\LP #1 \key{,} #2 \RP}
 \newcommand{\CALLQ}[2]{\key{Callq}\LP #1 \key{,} #2 \RP}
 \newcommand{\RETQ}{\key{Instr}\LP \skey{retq} \key{,} \LS \RS \RP}
 \fi
 \if\architecture\riscvEd
+\newcommand{\INDCALLQ}[2]{\key{IndirectCall}\LP#1\code{, }#2\RP}
 \newcommand{\JMPIF}[4]{\key{JumpIf}\LP #1 \key{,} #2 \key{,} #3 \key{,} #4 \RP}
 \newcommand{\SETIF}[3]{\key{SetIf}\LP #1 \key{,} #2  \key{,} #3 \RP}
 \newcommand{\CALLQ}[2]{\key{Call}\LP #1 \key{,} #2 \RP}

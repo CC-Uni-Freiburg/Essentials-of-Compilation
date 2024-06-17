@@ -16814,7 +16814,7 @@ class TypeCheckLfun(TypeCheckLtup):
 
 \clearpage
 
-\section{Functions in x86}
+\section{Functions in \ArchName}
 \label{sec:fun-x86}
 
 %% \margincomment{\tiny Make sure callee-saved registers are discussed
@@ -16823,41 +16823,58 @@ class TypeCheckLfun(TypeCheckLtup):
 %% \margincomment{\tiny Talk about the return address on the
 %%    stack and what callq  and retq does.\\ --Jeremy }
 
-The x86 architecture provides a few features to support the
+The \ArchName{} architecture provides a few features to support the
 implementation of functions. We have already seen that there are
-labels in x86 so that one can refer to the location of an instruction,
+labels in \ArchName{} so that one can refer to the location of an instruction,
 as is needed for jump instructions. Labels can also be used to mark
 the beginning of the instructions for a function.  Going further, we
-can obtain the address of a label by using the \key{leaq}
+can obtain the address of a label by using the {\ILEA}
 instruction. For example, the following puts the address of the
-\code{inc} label into the \code{rbx} register:
+\code{inc} label into the \ifxeightsix{\code{rbx}}\ifriscv{\code{a1}} register:
+\if\architecture\xeightysixEd
 \begin{lstlisting}
-   leaq inc(%rip), %rbx
+    leaq inc(%rip), %rbx
 \end{lstlisting}
 Recall from section~\ref{sec:select-instructions-gc} that
 \verb!inc(%rip)! is an example of instruction-pointer-relative
 addressing.
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+    la a1, inc
+\end{lstlisting}
+\fi
 
-In section~\ref{sec:x86} we used the \code{callq} instruction to jump
+In section~\ref{sec:x86} we used the {\ICALL} instruction to jump
 to functions whose locations were given by a label, such as
 \code{read\_int}. To support function calls in this chapter we instead
 jump to functions whose location are given by an address in
-a register; that is, we use \emph{indirect function calls}. The
-x86 syntax for this is a \code{callq} instruction that requires an asterisk
+a register; that is, we use \emph{indirect function calls}. 
+\if\architecture\xeightysixEd
+The {\ArchName} syntax for this is a {\ICALL} instruction that requires an asterisk
 before the register name.\index{subject}{indirect function call}
 \begin{lstlisting}
-   callq *%rbx
+    callq *%rbx
 \end{lstlisting}
-
+\fi
+\if\architecture\riscvEd
+The {\ArchName} syntax for this is a {\code{jalr}} (jump and link register) instruction.\index{subject}{indirect function call}
+\begin{lstlisting}
+    jalr a1
+\end{lstlisting}
+\fi
 
 \subsection{Calling Conventions}
 \label{sec:calling-conventions-fun}
 
 \index{subject}{calling conventions}
 
-The \code{callq} instruction provides partial support for implementing
-functions: it pushes the return address on the stack and it jumps to
-the target. However, \code{callq} does not handle
+The \ifxeightsix{\code{callq}}\ifriscv{\code{jalr}} instruction provides partial support for implementing
+functions: it 
+\ifxeightsix{pushes the return address on the stack}
+\ifriscv{saves the return address in register \code{ra}}
+and it jumps to
+the target. However, \ifxeightsix{\code{callq}}\ifriscv{\code{jalr}} does not handle
 \begin{enumerate}
 \item parameter passing,
 \item pushing frames on the procedure call stack and popping them off,
@@ -16865,32 +16882,39 @@ the target. However, \code{callq} does not handle
 \item determining how registers are shared by different functions.
 \end{enumerate}
 
-Regarding parameter passing, recall that the x86-64 calling
-convention for Unix-based systems uses the following six registers to
+Regarding parameter passing, recall that the {\ArchName} calling
+convention for Unix-based systems uses the following \ifxeightsix{six}\ifriscv{eight} registers to
 pass arguments to a function, in the given order:
+\if\xeightysixEd
 \begin{lstlisting}
 rdi rsi rdx rcx r8 r9
 \end{lstlisting}
-If there are more than six arguments, then the calling convention
+\fi
+\if\riscvEd
+\begin{lstlisting}
+a0 a1 a2 a3 a4 a5 a6 a7
+\end{lstlisting}
+\fi
+If there are more than \ifxeightsix{six}\ifriscv{eight} arguments, then the calling convention
 mandates using space on the frame of the caller for the rest of the
 arguments. However, to ease the implementation of efficient tail calls
-(section~\ref{sec:tail-call}), we arrange never to need more than six
+(section~\ref{sec:tail-call}), we arrange never to need more than \ifxeightsix{six}\ifriscv{eight}
 arguments.
 %
-The return value of the function is stored in register \code{rax}.
+The return value of the function is stored in register \RAX.
 
 Regarding frames \index{subject}{frame} and the procedure call stack,
 \index{subject}{procedure call stack} recall from
 section~\ref{sec:x86} that the stack grows down and each function call
 uses a chunk of space on the stack called a frame. The caller sets the
-stack pointer, register \code{rsp}, to the last data item in its
+stack pointer, register \SP, to the last data item in its
 frame. The callee must not change anything in the caller's frame, that
 is, anything that is at or above the stack pointer. The callee is free
 to use locations that are below the stack pointer.
 
 Recall that we store variables of tuple type on the root stack.  So,
 the prelude\index{subject}{prelude} of a function needs to move the
-root stack pointer \code{r15} up according to the number of variables
+root stack pointer \ROOTSP{} up according to the number of variables
 of tuple type and the conclusion\index{subject}{conclusion} needs to
 move the root stack pointer back down.  Also, the prelude must
 initialize to \code{0} this frame's slots in the root stack to signal
@@ -16918,9 +16942,9 @@ then the prelude of the \code{main} function must save that register
 to the stack and the conclusion of \code{main} must restore it.  This
 recommendation now generalizes to all functions.
 
-Recall that the base pointer, register \code{rbp}, is used as a
+Recall that the \ifxeightsix{base}\ifriscv{frame} pointer, register \FP, is used as a
 point of reference within a frame, so that each local variable can be
-accessed at a fixed offset from the base pointer
+accessed at a fixed offset from the \ifxeightsix{base}\ifriscv{frame} pointer
 (section~\ref{sec:x86}).
 %
 Figure~\ref{fig:call-frames} shows the layout of the caller and callee
@@ -16929,6 +16953,7 @@ frames.
 
 \begin{figure}[tbp]
 \centering
+\if\architecture\xeightysixEd
 \begin{tcolorbox}[colback=white]
   \begin{tabular}{r|r|l|l} \hline
 Caller View & Callee View & Contents       & Frame \\ \hline
@@ -16955,7 +16980,35 @@ $-8(j+k)$(\key{\%rbp}) &  & local variable $k$ \\
 & $-8(n+m)$(\key{\%rbp})   & local variable $m$\\ \hline
 \end{tabular}
 \end{tcolorbox}
-
+\fi
+\if\architecture\riscvEd
+\begin{tcolorbox}[colback=white]
+  \begin{tabular}{r|r|l|l} \hline
+Caller View & Callee View & Contents       & Frame \\ \hline
+-8(\key{fp})  & & return address & \multirow{5}{*}{Caller}\\
+-16(\key{fp})  &  & old \key{fp} \\
+-24(\key{fp}) &  & callee-saved $1$ \\
+\ldots & & \ldots \\
+$-8(j+2)$(\key{fp}) &  & callee-saved $j$ \\
+$-8(j+3)$(\key{fp}) &  & local variable $1$ \\
+\ldots & & \ldots \\
+$-8(j+k+2)$(\key{fp}) &  & local variable $k$ &  $\leftarrow$ callee's \key{fp}\\
+ %% & &  \\
+%% $8n-8$\key{(\%rsp)} & $8n+8$(\key{\%rbp})& argument $n$ \\
+%% & \ldots           & \ldots \\
+%% 0\key{(\%rsp)} & 16(\key{\%rbp})  & argument $1$   & \\
+\hline
+& -8(\key{fp})   & return address & \multirow{5}{*}{Callee} \\
+& -16(\key{fp})   & caller's \key{fp} \\
+& -24(\key{fp}) & callee-saved $1$ \\
+& \ldots & \ldots \\
+& $-8(n+2)$(\key{fp})  & callee-saved $n$ \\
+& $-8(n+3)$(\key{fp})  & local variable $1$ \\
+&  \ldots          & \ldots \\
+& $-8(n+m+2)$(\key{fp})   & local variable $m$  &  $\leftarrow$ callee's \key{sp}\\ \hline
+\end{tabular}
+\end{tcolorbox}
+\fi
 \caption{Memory layout of caller and callee frames.}
 \label{fig:call-frames}
 \end{figure}
@@ -17059,17 +17112,23 @@ One note remains regarding which instruction to use to make the tail
 call. When the callee is finished, it should not return to the current
 function but instead return to the function that called the current
 one. Thus, the return address that is already on the stack is the
-right one, and we should not use \key{callq} to make the tail call
+right one, and we should not use \ifxeightsix{\key{callq}}\ifriscv{\key{jalr}} to make the tail call
 because that would overwrite the return address. Instead we simply use
-the \key{jmp} instruction. As with the indirect function call, we write
+the \ifxeightsix{\key{jmp}}\ifriscv{\key{jr}} instruction. As with the indirect function call, we write
 an \emph{indirect jump}\index{subject}{indirect jump} with a register
-prefixed with an asterisk.  We recommend using \code{rax} to hold the
+\ifxeightsix{prefixed with an asterisk}\ifriscv{source}.  We recommend using \RAX{} to hold the
 jump target because the conclusion can overwrite just about everything
 else.
+\if\architecture\xeightysixEd
 \begin{lstlisting}
-   jmp *%rax
+    jmp *%rax
 \end{lstlisting}
-
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+    jr a0
+\end{lstlisting}
+\fi
 
 \section{Shrink \LangFun{}}
 \label{sec:shrink-r4}
@@ -17109,8 +17168,8 @@ The syntax of \LangFun{} is inconvenient for purposes of compilation
 in that it conflates the use of function names and local
 variables. This is a problem because we need to compile the use of a
 function name differently from the use of a local variable.  In
-particular, we use \code{leaq} to convert the function name (a label
-in x86) to an address in a register.  Thus, we create a new pass that
+particular, we use {\ILEA} to convert the function name (a label
+in \ArchName) to an address in a register.  Thus, we create a new pass that
 changes function references from $\VAR{f}$ to $\FUNREF{f}{n}$ where
 $n$ is the arity of the function.\python{\footnote{The arity is not
     needed in this chapter but is used in chapter~\ref{ch:Ldyn}.}}
@@ -17165,19 +17224,19 @@ should be categorized as complex expressions.
 \section{Limit Functions}
 \label{sec:limit-functions-r4}
 
-Recall that we wish to limit the number of function parameters to six
+Recall that we wish to limit the number of function parameters to \ifxeightsix{six}\ifriscv{eight}
 so that we do not need to use the stack for argument passing, which
 makes it easier to implement efficient tail calls.  However, because
 the input language \LangFun{} supports arbitrary numbers of function
 arguments, we have some work to do! The \code{limit\_functions} pass
-transforms functions and function calls that involve more than six
-arguments to pass the first five arguments as usual, but it packs the
-rest of the arguments into a tuple and passes it as the sixth
+transforms functions and function calls that involve more than \ifxeightsix{six}\ifriscv{eight}
+arguments to pass the first \ifxeightsix{five}\ifriscv{seven} arguments as usual, but it packs the
+rest of the arguments into a tuple and passes it as the \ifxeightsix{sixth}\ifriscv{eighth}
 argument.\footnote{The implementation this pass can be postponed to
   last because you can test the rest of the passes on functions with
-  six or fewer parameters.}
+  \ifxeightsix{six}\ifriscv{eight} or fewer parameters.}
 
-Each function definition with seven or more parameters is transformed as
+Each function definition with \ifxeightsix{seven}\ifriscv{nine} or more parameters is transformed as
 follows:
 {\if\edition\racketEd   
 \begin{lstlisting}
@@ -17190,14 +17249,14 @@ follows:
 \begin{lstlisting}
   FunctionDef(|$f$|, [(|$x_1$|,|$T_1$|),|$\ldots$|,(|$x_n$|,|$T_n$|)], |$T_r$|, None, |$\itm{body}$|, None)
 |$\Rightarrow$|
-  FunctionDef(|$f$|, [(|$x_1$|,|$T_1$|),|$\ldots$|,(|$x_5$|,|$T_5$|),(tup,TupleType([|$T_6, \ldots, T_n$|]))],
+  FunctionDef(|$f$|, [(|$x_1$|,|$T_1$|),|$\ldots$|,(|$x_\FIVE$|,|$T_\FIVE$|),(tup,TupleType([|$T_\SIX, \ldots, T_n$|]))],
          |$T_r$|, None, |$\itm{body}'$|, None)
 \end{lstlisting}
 \fi}
 %
 \noindent where the $\itm{body}$ is transformed into $\itm{body}'$ by
-replacing the occurrences of each parameter $x_i$ where $i > 5$ with
-the $k$th element of the tuple, where $k = i - 6$.
+replacing the occurrences of each parameter $x_i$ where $i > \FIVE$ with
+the $k$th element of the tuple, where $k = i - \SIX$.
 %
 {\if\edition\racketEd
 \begin{lstlisting}
@@ -17237,7 +17296,7 @@ $\Rightarrow$
 \fi}
 {\if\edition\pythonEd\pythonColor
 \begin{lstlisting}
-Call(|$e_0$|, [|$e_1,\ldots,e_5$|,Tuple([|$e_6,\ldots,e_n$|])])
+Call(|$e_0$|, [|$e_1,\ldots,e_\FIVE$|,Tuple([|$e_\SIX,\ldots,e_n$|])])
 \end{lstlisting}
 \fi}
 \end{minipage}
@@ -17250,7 +17309,7 @@ Call(|$e_0$|, [|$e_1,\ldots,e_5$|,Tuple([|$e_6,\ldots,e_n$|])])
 The primary decisions to make for this pass are whether to classify
 \code{FunRef} and \racket{\code{Apply}}\python{\code{Call}} as either
 atomic or complex expressions. Recall that an atomic expression 
-ends up as an immediate argument of an x86 instruction. Function
+ends up as an immediate argument of an {\ArchName} instruction. Function
 application translates to a sequence of instructions, so
 \racket{\code{Apply}}\python{\code{Call}} must be classified as
 a complex expression.  On the other hand, the arguments of
@@ -17258,11 +17317,11 @@ a complex expression.  On the other hand, the arguments of
 expressions.
 %
 Regarding \code{FunRef}, as discussed previously, the function label
-needs to be converted to an address using the \code{leaq}
+needs to be converted to an address using the {\ILEA}
 instruction. Thus, even though \code{FunRef} seems rather simple, it
 needs to be classified as a complex expression so that we generate an
 assignment statement with a left-hand side that can serve as the
-target of the \code{leaq}.
+target of the \ILEA.
 
 The output of this pass, \LangFunANF{} (figure~\ref{fig:Lfun-anf-syntax}),
 extends \LangAllocANF{} (figure~\ref{fig:Lvec-anf-syntax}) with \code{FunRef}
@@ -17474,6 +17533,7 @@ bottom three bits are zero, which we put to use in
 chapter~\ref{ch:Ldyn}. We discuss the new instructions as needed in
 this section.  \index{subject}{x86}
 
+\if\architecture\xeightysixEd
 \newcommand{\GrammarXIndCall}{
 \begin{array}{lcl}
 \Instr &::=&  \key{callq}\;\key{*}\Arg \MID \key{tailjmp}\;\Arg 
@@ -17482,6 +17542,16 @@ this section.  \index{subject}{x86}
 \Def &::= & \code{.globl}\,\code{.align 8}\,\itm{label}\; (\itm{label}\key{:}\, \Block)^{*} 
 \end{array}
 }
+\fi
+\if\architecture\riscvEd
+\newcommand{\GrammarXIndCall}{
+\begin{array}{lcl}
+\Instr &::=&  \key{jalr}\;\Arg \MID \key{tailjmp}\;\Arg 
+     \MID \key{la}\;\key{\%}\Reg\key{,}\; \Arg \\
+\Block &::= & \Instr^{+} \\
+\Def &::= & \code{.globl}\,\code{.align 8}\,\itm{label}\; (\itm{label}\key{:}\, \Block)^{*} 
+\end{array}
+}\fi
 
 \newcommand{\ASTXIndCallRacket}{
 \begin{array}{lcl}
@@ -17537,7 +17607,7 @@ this section.  \index{subject}{x86}
      &\MID& \gray{ \GLOBAL{\itm{label}} } \MID \FUNREF{\itm{label}}{\Int} \\
   \Instr &::=& \ldots \MID \INDCALLQ{\Arg}{\itm{int}}
     \MID \TAILJMP{\Arg}{\itm{int}}\\
-    &\MID& \BININSTR{\scode{leaq}}{\Arg}{\REG{\Reg}}\\
+    &\MID& \BININSTR{\scode{la}}{\REG{\Reg}}{\Arg}\\
   \Block &::=&\itm{label}\key{:}\,\Instr^{*} \\
   \Def &::= & \DEF{\itm{label}}{\LS\RS}{\LC\Block\code{,}\ldots\RC}{\_}{\Type}{\_} \\
 \LangXIndCallM{} &::= & \XPROGRAMDEFS{\LS\Def\code{,}\ldots\RS}
@@ -17551,7 +17621,7 @@ this section.  \index{subject}{x86}
 \end{figure}
 
 An assignment of a function reference to a variable becomes a
-load-effective-address instruction as follows, where $\itm{lhs}'$ is
+load-\ifxeightsix{effective-}address instruction as follows, where $\itm{lhs}'$ is
 the translation of $\itm{lhs}$ from \Atm{} in \LangCFun{} to \Arg{} in
 \LangXIndCallVar{}. The \code{FunRef} becomes a \code{Global} AST
 node, whose concrete syntax is instruction-pointer-relative
@@ -17567,7 +17637,7 @@ addressing.
 \fi}
 {\if\edition\pythonEd\pythonColor
 \begin{lstlisting}
-  |$\itm{lhs}$| = FunRef(|$f$| |$n$|);
+  |$\itm{lhs}$| = FunRef(|$f$|, |$n$|);
 \end{lstlisting}
 \fi}
 \end{minipage}
@@ -17575,9 +17645,16 @@ addressing.
 $\Rightarrow$\qquad\qquad
 &
 \begin{minipage}{0.3\textwidth}
+\if\architecture\xeightysixEd
 \begin{lstlisting}
 leaq |$f$|(%rip), |$\itm{lhs}'$|
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+la |$\itm{lhs}'$|, |$f$|
+\end{lstlisting}
+\fi
 \end{minipage}
   \end{tabular}
 \end{center}
@@ -17621,6 +17698,7 @@ start:
 \end{minipage}
 $\Rightarrow$
 \begin{minipage}{0.3\textwidth}
+  \if\architecture\xeightysixEd
 \begin{lstlisting}
 |$f$|start:
   movq %rdi, |$x_1$|
@@ -17630,6 +17708,18 @@ $\Rightarrow$
   |$\cdots$|
   |$\itm{instr}_n$|
 \end{lstlisting}
+  \fi
+  \if\architecture\riscvEd
+\begin{lstlisting}
+|$f$|start:
+  mv |$x_1$|, a0
+  mv |$x_2$|, a1
+  |$\cdots$|
+  |$\itm{instr}_1$|
+  |$\cdots$|
+  |$\itm{instr}_n$|
+\end{lstlisting}
+  \fi
 \end{minipage}
 \end{center}
 Recall that we use the label \code{start} for the initial block of a
@@ -17654,24 +17744,25 @@ use for them. If you implement the move-biasing challenge
 (section~\ref{sec:move-biasing}), the register allocator will try to
 assign the parameter variables to the corresponding argument register,
 in which case the \code{patch\_instructions} pass will remove the
-\code{movq} instruction. This happens in the example translation given
+{\IMOVE} instruction. This happens in the example translation given
 in figure~\ref{fig:add-fun} in section~\ref{sec:functions-example}, in
 the \code{add} function.
 %
 Also, note that the register allocator will perform liveness analysis
 on this sequence of move instructions and build the interference
 graph. So, for example, $x_1$ will be marked as interfering with
-\code{rsi}, and that will prevent the mapping of $x_1$ to \code{rsi},
-which is good because otherwise the first \code{movq} would overwrite
-the argument in \code{rsi} that is needed for $x_2$.
+\ifxeightsix{\code{rsi}}\ifriscv{\code{a1}}, and that will prevent the mapping of $x_1$ to \ifxeightsix{\code{rsi}}\ifriscv{\code{a1}},
+which is good because otherwise the first {\IMOVE} would overwrite
+the argument in \ifxeightsix{\code{rsi}}\ifriscv{\code{a1}} that is needed for $x_2$.
 
 Next, consider the compilation of function calls. In the mirror image
 of the handling of parameters in function definitions, the arguments
 are moved to the argument-passing registers.  Note that the function
 is not given as a label, but its address is produced by the argument
 $\itm{arg}_0$. So, we translate the call into an indirect function
-call. The return value from the function is stored in \code{rax}, so
+call. The return value from the function is stored in {\RAX}, so
 it needs to be moved into the \itm{lhs}.
+\if\architecture\xeightysixEd
 \begin{lstlisting}
   |\itm{lhs}| = |$\CALL{\itm{arg}_0}{\python{\LS}\itm{arg}_1~\itm{arg}_2 \ldots\python{\RS}}$|
   |$\Rightarrow$|
@@ -17681,6 +17772,18 @@ it needs to be moved into the \itm{lhs}.
   callq *|$\itm{arg}_0$|
   movq %rax, |$\itm{lhs}$|
 \end{lstlisting}
+\fi
+\if\architecture\riscvEd
+\begin{lstlisting}
+  |\itm{lhs}| = |$\CALL{\itm{arg}_0}{\python{\LS}\itm{arg}_1~\itm{arg}_2 \ldots\python{\RS}}$|
+  |$\Rightarrow$|
+  mv %a0, |$\itm{arg}_1$|
+  mv %a1, |$\itm{arg}_2$|
+  |$\vdots$|
+  jalr |$\itm{arg}_0$|
+  mv |$\itm{lhs}$|, %a0
+\end{lstlisting}
+\fi
 The \code{IndirectCallq} AST node includes an integer for the arity of
 the function, that is, the number of parameters. That information is
 useful in the \code{uncover\_live} pass for determining which
@@ -17711,17 +17814,17 @@ of register allocation, which we discuss in the following subsections.
 %% kinds of AST nodes: \code{fun-ref}, \code{indirect-callq}, and
 %% \code{leaq}. 
 
-The \code{IndirectCallq} instruction should be treated like
-\code{Callq} regarding its written locations $W$, in that they should
+The \code{IndirectCall\ifxeightsix{q}} instruction should be treated like
+{\ICALL} regarding its written locations $W$, in that they should
 include all the caller-saved registers. Recall that the reason for
 that is to force variables that are live across a function call to be assigned to callee-saved
 registers or to be spilled to the stack.
 
 Regarding the set of read locations $R$, the arity fields of
-\code{TailJmp} and \code{IndirectCallq} determine how many of the
+\code{TailJmp} and \code{IndirectCall\ifxeightsix{q}} determine how many of the
 argument-passing registers should be considered as read by those
 instructions. Also, the target field of \code{TailJmp} and
-\code{IndirectCallq} should be included in the set of read locations
+\code{IndirectCall\ifxeightsix{q}} should be included in the set of read locations
 $R$.
 
 \subsection{Build Interference Graph}
@@ -17757,10 +17860,10 @@ instead of just once for the whole program.
 
 \section{Patch Instructions}
 
-In \code{patch\_instructions}, you should deal with the x86
-idiosyncrasy that the destination argument of \code{leaq} must be a
+In \code{patch\_instructions}, you should deal with the {\ArchName}
+idiosyncrasy that the destination argument of {\ILEA} must be a
 register. Additionally, you should ensure that the argument of
-\code{TailJmp} is \itm{rax}, our reserved register---because we
+\code{TailJmp} is {\RAX}, our reserved register---because we
 trample many other registers before the tail call, as explained in the
 next section.
 
@@ -17768,11 +17871,12 @@ next section.
 
 Now that register allocation is complete, we can translate the
 \code{TailJmp} into a sequence of instructions. A naive translation of
-\code{TailJmp} would simply be \code{jmp *$\itm{arg}$}.  However,
+\code{TailJmp} would simply be
+\ifxeightsix{\code{jmp *$\itm{arg}$}}\ifriscv{\code{jr $\itm{arg}$}}.  However,
 before the jump we need to pop the current frame to achieve efficient
 tail calls.  This sequence of instructions is the same as the code for
-the conclusion of a function, except that the \code{retq} is replaced with
-\code{jmp *$\itm{arg}$}.
+the conclusion of a function, except that the \RET{} is replaced with
+indirect jump instruction.
 
 Regarding function definitions, we generate a prelude and conclusion
 for each one. This code is similar to the prelude and conclusion
@@ -17783,14 +17887,17 @@ carry out the following steps:
 \begin{enumerate}
 %% \item Start with \code{.global} and \code{.align} directives followed
 %%   by the label for the function.  (See figure~\ref{fig:add-fun} for an
-  %%   example.)
-\item Push \code{rbp} to the stack and set \code{rbp} to current stack
-  pointer.
+%%   example.)
+  \if\architecture\riscvEd
+\item Push the return address \code{ra} to the stack.
+  \fi
+\item Push \FP{} to the stack and set {\FP} to current stack
+  pointer\ifriscv{$+16$}.
 \item Push to the stack all the callee-saved registers that were
   used for register allocation.
-\item Move the stack pointer \code{rsp} down to make room for the
+\item Move the stack pointer {\SP} down to make room for the
   regular spills (aligned to 16 bytes).
-\item Move the root stack pointer \code{r15} up by the size of the
+\item Move the root stack pointer {\ROOTSP} up by the size of the
   root-stack frame for this function, which depends on the number of
   spilled tuple-typed variables. \label{root-stack-init}
 \item Initialize to zero all new entries in the root-stack frame.
@@ -17799,8 +17906,8 @@ carry out the following steps:
 The prelude of the \code{main} function has an additional task: call
 the \code{initialize} function to set up the garbage collector, and
 then move the value of the global \code{rootstack\_begin} in
-\code{r15}. This initialization should happen before step
-\ref{root-stack-init}, which depends on \code{r15}.
+\ROOTSP. This initialization should happen before step
+\ref{root-stack-init}, which depends on \ROOTSP.
 
 The conclusion of every function should do the following:
 \begin{enumerate}
@@ -17809,8 +17916,8 @@ The conclusion of every function should do the following:
   stack.
 \item Move the root stack pointer back down by the size of the
   root-stack frame for this function.
-\item Restore \code{rbp} by popping it from the stack.
-\item Return to the caller with the \code{retq} instruction.
+\item Restore \FP by popping it from the stack.
+\item Return to the caller with the \RET{} instruction.
 \end{enumerate}
 
 The output of this pass is \LangXIndCallFlat{}, which differs from
@@ -18016,7 +18123,8 @@ $\Rightarrow$
    )
 \end{lstlisting}
 \fi}
-{\if\edition\pythonEd\pythonColor
+{\if\architecture\xeightysixEd
+  {\if\edition\pythonEd\pythonColor
 \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
 def add() -> int:
   addstart:
@@ -18037,7 +18145,30 @@ def main() -> int:
     movq $0, %rax
     jmp mainconclusion
 \end{lstlisting}
-\fi}
+    \fi}
+  \fi
+  \if\architecture\riscvEd
+  {\if\edition\pythonEd\pythonColor
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+def add() -> int:
+  addstart:
+    mv x, %a0
+    mv y, %a1
+    add %a0, x, y
+    j addconclusion
+def main() -> int:
+  mainstart:
+    la fun.0, add
+    mv %a0, $40
+    mv %a1, $2
+    jalr fun.0
+    mv tmp.1, %a0
+    mv %a0, tmp.1
+    callq print_int
+    mv %a0, $0
+    j mainconclusion
+\end{lstlisting}
+\fi}}
 $\Downarrow$
 \end{minipage}
 \end{tabular}
@@ -18061,6 +18192,7 @@ add86conclusion:
 \end{lstlisting}
 \fi}
 {\if\edition\pythonEd\pythonColor
+  {\if\architecture\xeightysixEd
 \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
   .align 8
 add:
@@ -18080,6 +18212,32 @@ addconclusion:
   popq %rbp
   retq 
 \end{lstlisting}
+    \fi}
+  {\if\architecture\riscvEd
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+  .align 8
+add:
+  addi sp, sp, -16
+  sd ra, 8(sp)
+  sd fp, 0(sp)
+  mv fp, sp
+  addi sp, sp, 0
+  j addstart
+addstart:
+  mv %a0, %a0
+  mv %a1, %a1
+  add %a0, %a0, %a1
+  j addconclusion
+addconclusion:
+  addi r15, r15, 0
+  ld fp, 0(sp)
+  addi sp, sp, 0
+  ld fp, 0(sp)
+  ld ra, 8(sp)
+  addi sp, sp, 8
+  ret
+\end{lstlisting}
+  \fi}
 \fi}
 \end{minipage}
 &
@@ -18109,6 +18267,7 @@ mainconclusion:
 \end{lstlisting}
 \fi}
 {\if\edition\pythonEd\pythonColor
+{\if\architecture\xeightysixEd
 \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
   .globl main
   .align 8
@@ -18137,12 +18296,48 @@ mainconclusion:
   popq %rbp
   retq 
 \end{lstlisting}
+  \fi}
+{\if\architecture\riscvEd
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+  .globl main
+  .align 8
+main:
+  addi sp, sp, -16
+  sd ra, 8(sp)
+  sd fp, 0(sp)
+  mv fp, sp
+  addi sp, sp, 0
+  mv %a0, $65536
+  mv %a1, $65536
+  call initialize
+  la %r15, rootstack_begin
+  j mainstart
+mainstart:
+  la %t0, add
+  mv %a0, $40
+  mv %a1, $2
+  jalr %t0
+  mv %t0, %a0
+  mv %a0, %t0
+  call print_int
+  mv %a0, $0
+  j mainconclusion
+mainconclusion:
+  addi r15, r15, 0
+  ld fp, 0(sp)
+  addi sp, sp, 0
+  ld fp, 0(sp)
+  ld ra, 8(sp)
+  addi sp, sp, 8
+  ret
+\end{lstlisting}
+\fi}
 \fi}
 \end{minipage}
 \end{tabular}
   \end{tcolorbox}
 
-  \caption{Example compilation of a simple function to x86.}
+  \caption{Example compilation of a simple function to \ArchName.}
 \label{fig:add-fun}
 \end{figure}
 
