@@ -6249,19 +6249,20 @@ locations. Second, in the special case in which two locations hold the
 same value (because one was assigned to the other), they can be live
 at the same time without interfering with each other.
 
-A better way to compute the interference graph is to focus on
+A more economic way to compute the interference graph focuses on
 writes~\citep{Appel:2003fk}. The writes performed by an instruction
-must not overwrite something in a live location. So for each
+must not overwrite a live location. So for each
 instruction, we create an edge between the locations being written to
 and the live locations. (However, a location never interferes with
-itself.) For the \ifxeightsix{\key{callq}}\ifriscv{\key{call}} instruction, we consider all the
-caller-saved registers to have been written to, so an edge is added
-between every live variable and every caller-saved register. Also, for
-\ifxeightsix{\key{movq}}\ifriscv{\key{mv}} there is the special case
-of two variables holding the same 
-value. If a live variable $v$ is the same as the source of the
+itself.) For the \ifxeightsix{\key{callq}}\ifriscv{\key{call}}
+instruction, we assume that the callee writes to all 
+caller-saved registers, so an edge is added
+between every live variable and every caller-saved register. There is
+also a special treatment for the
+\ifxeightsix{\key{movq}}\ifriscv{\key{mv}} instruction. If a live variable $v$ is the same as the source of the
 move, then there is no need to add an edge between $v$ and the
-destination, because they both hold the same value.
+destination. It is fine if they are mapped to the same register,
+because they both hold the same value. 
 %
 Hence we have the following two rules:
 
@@ -6269,12 +6270,12 @@ Hence we have the following two rules:
 \item If instruction $I_k$ is a move instruction of the form
   \ifxeightsix{\key{movq} $s$\key{,} $d$}%
   \ifriscv{\key{mv} $d$\key{,} $s$}, then for every $v \in
-  L_{\mathsf{after}}(k)$, if $v \neq d$ and $v \neq s$, add the edge
-  $(d,v)$.
+  L_{\mathsf{after}}(k) \setminus \{ d, s\}$, add the edge
+  $\{d,v\}$.
 
 \item For any other instruction $I_k$, for every $d \in W(k)$ and
-  every $v \in L_{\mathsf{after}}(k)$, if $v \neq d$, add the edge
-  $(d,v)$.
+  every $v \in L_{\mathsf{after}}(k) \setminus \{d\}$, add the edge
+  $\{d,v\}$.
 \end{enumerate}
 
 Working from the top to bottom of figure~\ref{fig:live-eg}, we apply
@@ -6541,9 +6542,9 @@ highest saturation).  The idea is that choosing highly constrained
 squares earlier rather than later is better, because later on there may
 not be any possibilities left in the highly saturated squares.
 
-However, register allocation is easier than sudoku, because the
+Register allocation is easier than sudoku, because the
 register allocator can fall back to assigning variables to stack
-locations when the registers run out. Thus, it makes sense to replace
+locations when the registers run out. Thus, we replace
 backtracking with greedy search: make the best choice at the time and
 keep going. We still wish to minimize the number of colors needed, so
 we use the most-constrained-first heuristic in the greedy search.
@@ -7423,7 +7424,8 @@ Run the script to test the register allocator.
   the functions you have created to perform register allocation:
   \code{uncover\_live}, \code{build\_interference}, and
   \code{allocate\_registers}.
-  Run the \code{run-tests.py} script to check whether the
+%  Run the \code{run-tests.py} script to
+  Check whether the
   output programs produce the same result as the input programs.
   Inspect the generated {\ArchName} programs to make sure that some variables
   are assigned to registers.
@@ -7447,8 +7449,8 @@ In the running example, the instruction \code{movq -8(\%rbp),
   then move \code{rax} into \code{-16(\%rbp)}.
 %
 The moves from \code{-8(\%rbp)} to \code{-8(\%rbp)} are also
-problematic, but they can simply be deleted. In general, we recommend
-deleting all the trivial moves whose source and destination are the
+problematic, but they can simply be deleted. In general, we wish to
+delete all trivial moves whose source and destination are the
 same location.
 \fi
 \if\architecture\riscvEd
@@ -7932,9 +7934,9 @@ registers over stack locations. So, this preference should be used as
 a tie breaker in choosing between two registers or in choosing between
 two stack locations.
 
-We recommend representing the move relationships in a graph, similarly
-to how we represented interference.  The following is the \emph{move
-  graph} for our example.
+We represent the move relationships in an undirected graph, the
+\emph{move graph}, with nodes variables and and edges $\{p, q\}$ if
+$p$ and $q$ are move related.  Here is the move graph for our example.
 {\if\edition\racketEd      
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
@@ -19453,7 +19455,7 @@ $\Rightarrow\qquad$
 \fi}
 {\if\edition\pythonEd\pythonColor
 \begin{lstlisting}
-Closure(|$n$|, [FunRef(|$f$| |$n$|)])
+Closure(|$n$|, [FunRef(|$f$|, |$n$|)])
 \end{lstlisting}
 \fi}
 \end{minipage}
@@ -24113,9 +24115,8 @@ types.
 %
 In Python, when writing a generic function such as \code{map}, one
 does not explicitly write its generic type (using \code{All}).
-Instead, that the function is generic is implied by the use of type
-variables (such as \code{T}) in the type annotations of its
-parameters.
+Instead, we put a list of type variables (such as \code{T}) between
+the name of the function and its parameter list.
 %
 \fi}
 
@@ -24135,7 +24136,7 @@ parameters.
 \fi}
 {\if\edition\pythonEd\pythonColor
 \begin{lstlisting}
-def map(f : Callable[[T],T], tup : tuple[T,T]) -> tuple[T,T]:
+def map[T](f : Callable[[T],T], tup : tuple[T,T]) -> tuple[T,T]:
   return (f(tup[0]), f(tup[1]))
 
 def add1(x : int) -> int:
@@ -24188,6 +24189,7 @@ The grammar for types is extended to include the type of a generic
 
 \newcommand{\LpolyGrammarPython}{
 \begin{array}{lcl}
+   \Def &::=& \CDEF{\Var[\Var\ldots]}{\Var \key{:} \Type\key{,} \ldots}{\Type}{\Stmt^{+}}  \\
   \Type &::=& \key{All}\LS \LS\Var\ldots\RS,\Type\RS \MID \Var 
 \end{array}
 }
@@ -24324,13 +24326,13 @@ not generic.
 \fi}
 {\if\edition\pythonEd\pythonColor
 \begin{lstlisting}
-def apply_twice(f : All[[U], Callable[[U],U]]) -> int:
+def apply_twice[U](f : All[[U], Callable[[U],U]]) -> int:
   if f(True):
     return f(42)
   else:
     return f(777)
 
-def id(x: T) -> T:
+def id[T](x: T) -> T:
   return x
 
 print(apply_twice(id))
@@ -24392,7 +24394,7 @@ is equivalent to
 Two generic types are equal if they differ only in
 the choice of the names of the type parameters. The definition of type
 equality shown in figure~\ref{fig:type-check-Lpoly-aux} renames the type
-parameters in one type to match the type parameters of the other type.
+parameters in both argument types to fresh type parameters.
 
 {\if\edition\racketEd
 %
@@ -24868,7 +24870,7 @@ of \code{map} is wrapped in an \code{inst} node, with the parameter
 \fi}
 {\if\edition\pythonEd\pythonColor
 \begin{lstlisting}
-def map(f : Callable[[T],T], tup : tuple[T,T]) -> tuple[T,T]:
+def map[T](f : Callable[[T],T], tup : tuple[T,T]) -> tuple[T,T]:
     return (f(tup[0]), f(tup[1]))
 
 def add1(x : int) -> int:
