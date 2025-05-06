@@ -3216,7 +3216,7 @@ Recall that only one argument of an
 be forced to assign both arguments to memory locations.
 \fi
 \if\architecture\riscvEd
-Recall that only no argument of an
+Recall that no argument of an
 {\ArchName} arithmetic instruction may be a memory access, but \key{assign\_homes} might
 be forced to assign an argument to a memory location.
 \fi
@@ -5888,8 +5888,8 @@ addq b, c
 \fi
 \if\architecture\riscvEd
 \begin{lstlisting}[numbers=left,numberstyle=\tiny]
-mv a, $5
-mv b, $30
+mv a, 5
+mv b, 30
 mv c, a
 mv b, $10
 add b, b, c
@@ -5980,7 +5980,7 @@ Let us walk through the previous example, applying these formulas
 starting with the instruction on line 5 of the code fragment. We
 collect the answers in figure~\ref{fig:liveness-example-0}.  The
 $L_{\mathsf{after}}$ for the \ifxeightsix{\code{addq b,
-    c}}\ifriscv{\code{mv b, b, c}} instruction is
+    c}}\ifriscv{\code{add b, b, c}} instruction is
 $\emptyset$ because it is the last instruction
 (formula~\eqref{eq:live-last-empty}).  The $L_{\mathsf{before}}$ for
 this instruction is $\{\ttm{b},\ttm{c}\}$ because it reads from
@@ -5990,7 +5990,7 @@ variables \code{b} and \code{c}
    L_{\mathsf{before}}(5) = (\emptyset - \{\ttm{c}\}) \cup \{ \ttm{b}, \ttm{c} \} = \{ \ttm{b}, \ttm{c} \}
 \]
 Moving on the the instruction \ifxeightsix{\code{movq \$10,
-    b}}\ifriscv{\code{mv b, \$10}} at line 4, we copy
+    b}}\ifriscv{\code{mv b, 10}} at line 4, we copy
 the live-before set from line 5 to be the live-after set for this
 instruction (formula~\eqref{eq:live-after-before-next}).
 \[
@@ -6006,10 +6006,10 @@ The live-before for instruction \ifxeightsix{\code{movq a,
     c}}\ifriscv{\code{mv c, a}}
 is $\{\ttm{a}\}$ because it writes to $\{\ttm{c}\}$ and reads from $\{\ttm{a}\}$
 (formula~\eqref{eq:live-before-after-minus-writes-plus-reads}).  The
-live-before for \ifxeightsix{\code{movq \$30, b}}\ifriscv{\code{mv b, \$30}} is $\{\ttm{a}\}$ because it writes to a
+live-before for \ifxeightsix{\code{movq \$30, b}}\ifriscv{\code{mv b, 30}} is $\{\ttm{a}\}$ because it writes to a
 variable that is not live and does not read from a variable.
 Finally, the live-before for \ifxeightsix{\code{movq \$5,
-    a}}\ifriscv{\code{mv a, \$5}} is $\emptyset$
+    a}}\ifriscv{\code{mv a, 5}} is $\emptyset$
 because it writes to variable \code{a}.
 
 \begin{figure}[tbp]
@@ -7460,8 +7460,8 @@ that the suggested fix is to first load \code{-24(fp)} into
 \code{a0} and store \code{a0} into \code{-24(fp)} afterwards.
 The instruction \code{add t0, -24(fp), t0} is similar.
 %
-The move of \code{\$1} into \code{t0} becomes an immediate load;
-the move of \code{\$42} into \code{-24(fp)} gets factored into an
+The move of \code{1} into \code{t0} becomes an immediate load;
+the move of \code{42} into \code{-24(fp)} gets factored into an
 immediate load to \code{a0} and a store into \code{-24(fp)}.
 Furthermore, there are some trivial moves like \code{mv t0, t0}. We
 recommend deleting all the trivial moves whose source and destination
