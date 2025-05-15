@@ -5987,7 +5987,7 @@ this instruction is $\{\ttm{b},\ttm{c}\}$ because it reads from
 variables \code{b} and \code{c}
 (formula~\eqref{eq:live-before-after-minus-writes-plus-reads}):
 \[
-   L_{\mathsf{before}}(5) = (\emptyset - \{\ttm{c}\}) \cup \{ \ttm{b}, \ttm{c} \} = \{ \ttm{b}, \ttm{c} \}
+   L_{\mathsf{before}}(5) = (\emptyset - \{\ttm{b}\}) \cup \{ \ttm{b}, \ttm{c} \} = \{ \ttm{b}, \ttm{c} \}
 \]
 Moving on the the instruction \ifxeightsix{\code{movq \$10,
     b}}\ifriscv{\code{mv b, 10}} at line 4, we copy
@@ -7997,12 +7997,12 @@ print(v)
 ${\Rightarrow\qquad}$
 \begin{minipage}{0.45\textwidth}
 \begin{lstlisting}
-mv v 0
-mv w v
-add x v w
-sub y v w
-add v w x
-mv a0 v
+mv v, 0
+mv w, v
+add x, v, w
+sub y, v, w
+add v, w, x
+mv a0, v
 call print_int
 \end{lstlisting}
 \end{minipage}
@@ -8317,7 +8317,7 @@ We choose to color \code{w} with $0$, because \code{w} is move related to the al
   \draw (w) to (y);
 \end{tikzpicture}
 \]
-Finally only \code{y} is left uncolored, so we color it with $2$.
+Finally, only \code{y} is left uncolored, so we color it with $2$.
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
   \node (v) at (0,2) {$\ttm{v}: 0, \{1\}$};
@@ -8489,35 +8489,35 @@ the code on the right.
 \begin{center}
 \begin{minipage}{0.20\textwidth}
 \begin{lstlisting}
-mv v 0
-mv w v
-add x v w
-sub y v w
-add v w x
-mv a0 v
+mv v, 0
+mv w, v
+add x, v, w
+sub y, v, w
+add v, w, x
+mv a0, v
 call print_int
 \end{lstlisting}
 \end{minipage}
 ${\Rightarrow\qquad}$
 \begin{minipage}{0.20\textwidth}
 \begin{lstlisting}
-mv t0 0
-mv t0 t0
-add t1 t0 t0
-sub t2 t0 t0
-add t0 t0 t1
-mv a0 t0
+mv t0, 0
+mv t0, t0
+add t1, t0, t0
+sub t2, t0, t0
+add t0, t0, t1
+mv a0, t0
 call print_int
 \end{lstlisting}
 \end{minipage}
 ${\Rightarrow\qquad}$
 \begin{minipage}{0.20\textwidth}
 \begin{lstlisting}
-mv t0 0
-add t1 t0 t0
-sub t2 t0 t0
-add t0 t0 t1
-mv a0 t0
+mv t0, 0
+add t1, t0, t0
+sub t2, t0, t0
+add t0, t0, t1
+mv a0, t0
 call print_int
 \end{lstlisting}
 \end{minipage}
