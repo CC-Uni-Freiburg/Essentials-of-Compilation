@@ -4355,25 +4355,25 @@ of them can be implemented by load or store instructions.
 This approach does not work for the second \key{mv} instruction because both
 arguments are stack locations.
 We suggest fixing this problem by
-loading the source location to the register \key{a0} and then
-store \key{a0} to the destination location, as follows.
+loading the source location to the register \key{t0} and then
+store \key{t0} to the destination location, as follows.
 \begin{lstlisting}
-    ld a0, -24(fp)
-    sd a0, -32(fp)
+    ld t0, -24(fp)
+    sd t0, -32(fp)
 \end{lstlisting}
 The same trick can be used to resolve the immediate argument of the
 first move.
 \begin{lstlisting}
-    li a0, 42
-    sd a0, -24(fp)
+    li t0, 42
+    sd t0, -24(fp)
 \end{lstlisting}
 After transforming the remaining move instruction to a store instruction, we obtain a legal
 {\ArchName} program.
 \begin{lstlisting}
-    li a0, 42
-    sd a0, -24(fp)
-    ld a0, -24(fp)
-    sd a0, -32(fp)
+    li t0, 42
+    sd t0, -24(fp)
+    ld t0, -24(fp)
+    sd t0, -32(fp)
     ld a0, -32(fp)
     call print_int
 \end{lstlisting}
@@ -4386,7 +4386,7 @@ case we should generate a \code{addi} instruction, unless the
 immediate value is too big to fit in the 12~bit allocated for
 immediate values. Second, both
 arguments may be in memory or immediate, in which case we load them into registers
-\key{a0} and \key{a1}. One might be tempted to perform the addition at
+\key{t0} and \key{t1}. One might be tempted to perform the addition at
 compile time, if both operands are immediate, but that requires a
 correct emulation of the processor's 64-bit addition instruction.
 \fi
@@ -6564,15 +6564,15 @@ correspondence, with \ifxeightsix{$k=11$}\ifriscv{$k=24$}.
 \fi
 \if\architecture\riscvEd
 \begin{lstlisting}
-  0: t0, 1: t1, 2: t2, 3: t3, 4: t4, 5: t5, 6: t6,
-  7: a7, 8: a6, 9: a5, 10: a4, 10: a3, 11: a2, 12: a1,
-  13: s1, 14: s2, 15: s3, 16: s4, 17: s5, 18: s6, 19: s7,
-  20: s8, 21: s9, 22: s10, 23: s11
+  0: t2, 1: t3, 2: t4, 3: t5,
+  4: a7, 5: a6, 6: a5, 7: a4, 8: a3, 9: a2, 10: a1, 11: a0,
+  12: s1, 13: s2, 14: s3, 15: s4, 16: s5, 17: s6, 18: s8, 19: s9, 20: s10,
+  21: s11
 \end{lstlisting}
 \fi
 The integers $k$ and larger correspond to stack locations. The
 registers that are not used for register allocation, such as
-\RAX, are assigned to negative integers. The example assumes the following correspondence.
+\ifxeightsix{\RAX}\ifriscv{\code{t0}}, are assigned to negative integers. The example assumes the following correspondence.
 \if\architecture\xeightysixEd
 \begin{lstlisting}
   -1: rax, -2: rsp, -3: rbp, -4: r11, -5: r15
@@ -6580,7 +6580,7 @@ registers that are not used for register allocation, such as
 \fi
 \if\architecture\riscvEd
 \begin{lstlisting}
-  -1: a0, -2: sp, -3: fp, -4: ra, -5: x3, -6: x4
+  -1: sp, -2: fp, -3: ra, -4: x3, -5: x4, -6: t0, -7: t1
 \end{lstlisting}
 \fi
 
@@ -7244,7 +7244,7 @@ With the coloring complete, we finalize the assignment of variables to
 registers and stack locations. We map the first $k$ colors to the $k$
 registers and the rest of the colors to stack locations.  Suppose for
 the moment that we have just one register to use for register
-allocation, \ifxeightsix{\key{rcx}}\ifriscv{\key{t0}}. Then we have the following assignment.
+allocation, \ifxeightsix{\key{rcx}}\ifriscv{\key{t2}}. Then we have the following assignment.
 \if\architecture\xeightysixEd
 \[
   \{ 0 \mapsto \key{\%rcx}, \; 1 \mapsto \key{-8(\%rbp)}, \; 2 \mapsto \key{-16(\%rbp)} \}
@@ -7281,14 +7281,14 @@ assignment of variables to locations.
 \fi
 \if\architecture\riscvEd
 \begin{gather*}
-  \{ \ttm{v} \mapsto \key{t0},  \,
+  \{ \ttm{v} \mapsto \key{t2},  \,
   \ttm{w} \mapsto \key{-24(fp)}, \,
-  \ttm{x} \mapsto \key{t0}, \,
-  \ttm{y} \mapsto \key{t0}, \\
+  \ttm{x} \mapsto \key{t2}, \,
+  \ttm{y} \mapsto \key{t2}, \\
   \ttm{z} \mapsto \key{-24(fp)}, \,
-  \ttm{tmp\_0} \mapsto \key{t0}, \,
-  \ttm{tmp\_1} \mapsto \key{t0}, \,
-  \ttm{tmp\_2} \mapsto \key{t0} \}
+  \ttm{tmp\_0} \mapsto \key{t2}, \,
+  \ttm{tmp\_1} \mapsto \key{t2}, \,
+  \ttm{tmp\_2} \mapsto \key{t2} \}
 \end{gather*}
 \fi
 \fi}
@@ -7389,15 +7389,15 @@ call print_int
 $\Rightarrow\qquad$
 \begin{minipage}{0.45\textwidth}
 \begin{lstlisting}
-mv   t0, $1
+mv   t2, $1
 mv   -24(fp), $42
-add  t0, t0, 7
-mv   t0, t0
-add  -24(fp), t0, -24(fp)
-mv   t0, t0
-neg  t0, t0
-add  t0, -24(fp), t0
-mv   a0, t0
+add  t2, t2, 7
+mv   t2, t2
+add  -24(fp), t2, -24(fp)
+mv   t2, t2
+neg  t2, t2
+add  t2, -24(fp), t2
+mv   a0, t2
 call print_int
 \end{lstlisting}
 \end{minipage}
@@ -7455,15 +7455,15 @@ same location.
 \fi
 \if\architecture\riscvEd
 In the running example, the instruction
-\code{add -24(fp), t0, -24(fp)} is problematic. Recall from section~\ref{sec:patch-s0}
+\code{add -24(fp), t2, -24(fp)} is problematic. Recall from section~\ref{sec:patch-s0}
 that the suggested fix is to first load \code{-24(fp)} into
-\code{a0} and store \code{a0} into \code{-24(fp)} afterwards.
-The instruction \code{add t0, -24(fp), t0} is similar.
+\code{t0} and store \code{t0} into \code{-24(fp)} afterwards.
+The instruction \code{add t2, -24(fp), t2} is similar.
 %
-The move of \code{1} into \code{t0} becomes an immediate load;
+The move of \code{1} into \code{t2} becomes an immediate load;
 the move of \code{42} into \code{-24(fp)} gets factored into an
-immediate load to \code{a0} and a store into \code{-24(fp)}.
-Furthermore, there are some trivial moves like \code{mv t0, t0}. We
+immediate load to \code{t0} and a store into \code{-24(fp)}.
+Furthermore, there are some trivial moves like \code{mv t2, t2}. We
 recommend deleting all the trivial moves whose source and destination
 are the same location.
 \fi
@@ -7544,32 +7544,32 @@ callq print_int
 {\if\architecture\riscvEd
 \begin{minipage}{0.35\textwidth}
 \begin{lstlisting}
-mv   t0, $1
+mv   t2, $1
 mv   -24(fp), $42
-add  t0, t0, 7
-mv   t0, t0
-add  -24(fp), t0, -24(fp)
-mv   t0, t0
-neg  t0, t0
-add  t0, -24(fp), t0
-mv   a0, t0
+add  t2, t2, 7
+mv   t2, t2
+add  -24(fp), t2, -24(fp)
+mv   t2, t2
+neg  t2, t2
+add  t2, -24(fp), t2
+mv   a0, t2
 call print_int
 \end{lstlisting}
 \end{minipage}
 $\Rightarrow\qquad$
 \begin{minipage}{0.45\textwidth}
 \begin{lstlisting}
-li   t0, 1
-li   a0, 42
-sd   a0, -24(fp)
-addi t0, t0, 7
-ld   a0, -24(fp)
-add  a0, t0, a0
-sd   a0, -24(fp)
-neg  t0, t0
-ld   a0, -24(fp)
-add  t0, a0, t0
-mv   a0, t0
+li   t2, 1
+li   t0, 42
+sd   t0, -24(fp)
+addi t2, t2, 7
+ld   t0, -24(fp)
+add  t0, t2, t0
+sd   t0, -24(fp)
+neg  t2, t2
+ld   t0, -24(fp)
+add  t2, t0, t2
+mv   a0, t2
 call print_int
 \end{lstlisting}
 \end{minipage}
@@ -7805,15 +7805,15 @@ main:
     addi    fp, sp, 32
 
     li      s0, 1
-    li      a0, 42
-    sd      a0, -24(fp)
+    li      t0, 42
+    sd      t0, -24(fp)
     addi    s0, s0, 7
-    ld      a0, -24(fp)
-    add     a0, s0, a0
-    sd      a0, -24(fp)
+    ld      t0, -24(fp)
+    add     t0, s0, t0
+    sd      t0, -24(fp)
     neg     s0, s0
-    ld      a0, -24(fp)
-    add     s0, a0, s0
+    ld      t0, -24(fp)
+    add     s0, t0, s0
     mv      a0, s0
     call    print_int
 
@@ -8359,10 +8359,10 @@ We get the following assignment of variables to registers.
 \fi}
 {\if\architecture\riscvEd
 \begin{gather*}
-  \{ \ttm{v} \mapsto \key{t0}, \,
-     \ttm{w} \mapsto \key{t0}, \,
-     \ttm{x} \mapsto \key{t1}, \,
-     \ttm{y} \mapsto \key{t2}
+  \{ \ttm{v} \mapsto \key{t2}, \,
+     \ttm{w} \mapsto \key{t2}, \,
+     \ttm{x} \mapsto \key{t3}, \,
+     \ttm{y} \mapsto \key{t4}
   \}
 \end{gather*}
 \fi}
@@ -8501,23 +8501,23 @@ call print_int
 ${\Rightarrow\qquad}$
 \begin{minipage}{0.20\textwidth}
 \begin{lstlisting}
-mv t0, 0
-mv t0, t0
-add t1, t0, t0
-sub t2, t0, t0
-add t0, t0, t1
-mv a0, t0
+mv t2, 0
+mv t2, t2
+add t3, t2, t2
+sub t4, t2, t2
+add t2, t2, t3
+mv a0, t2
 call print_int
 \end{lstlisting}
 \end{minipage}
 ${\Rightarrow\qquad}$
 \begin{minipage}{0.20\textwidth}
 \begin{lstlisting}
-mv t0, 0
-add t1, t0, t0
-sub t2, t0, t0
-add t0, t0, t1
-mv a0, t0
+mv t2, 0
+add t3, t2, t2
+sub t4, t2, t2
+add t2, t2, t3
+mv a0, t2
 call print_int
 \end{lstlisting}
 \end{minipage}
