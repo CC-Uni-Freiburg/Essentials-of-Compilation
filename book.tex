@@ -7620,10 +7620,13 @@ of stack locations used by spilled variables\footnote{Sometimes two or
   $S$ can be less than the number of spilled variables.} and $C$ be
 the number of callee-saved registers that were
 allocated\index{subject}{allocate} to
-variables. The $\itm{align}$ function rounds a number up to the
-nearest 16 bytes.
+variables (including the return address and the frame pointer). The
+$\itm{align}$ function rounds a number up to the nearest 16 bytes.
 \[
-   \itm{A} = \itm{align}(8\itm{S} + 8\itm{C}) - 8\itm{C}
+  \itm{A} = \itm{align}(8\itm{S} + 8\itm{C})
+\if\architecture\xeightysixEd
+- 8\itm{C}
+\fi
 \]
 \if\architecture\xeightysixEd
 The reason we subtract $8\itm{C}$ in this equation is that the
