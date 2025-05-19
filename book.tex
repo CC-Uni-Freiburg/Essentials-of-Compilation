@@ -4355,25 +4355,25 @@ of them can be implemented by load or store instructions.
 This approach does not work for the second \key{mv} instruction because both
 arguments are stack locations.
 We suggest fixing this problem by
-loading the source location to the register \key{a0} and then
-store \key{a0} to the destination location, as follows.
+loading the source location to the register \key{t0} and then
+store \key{t0} to the destination location, as follows.
 \begin{lstlisting}
-    ld a0, -24(fp)
-    sd a0, -32(fp)
+    ld t0, -24(fp)
+    sd t0, -32(fp)
 \end{lstlisting}
 The same trick can be used to resolve the immediate argument of the
 first move.
 \begin{lstlisting}
-    li a0, 42
-    sd a0, -24(fp)
+    li t0, 42
+    sd t0, -24(fp)
 \end{lstlisting}
 After transforming the remaining move instruction to a store instruction, we obtain a legal
 {\ArchName} program.
 \begin{lstlisting}
-    li a0, 42
-    sd a0, -24(fp)
-    ld a0, -24(fp)
-    sd a0, -32(fp)
+    li t0, 42
+    sd t0, -24(fp)
+    ld t0, -24(fp)
+    sd t0, -32(fp)
     ld a0, -32(fp)
     call print_int
 \end{lstlisting}
@@ -4386,7 +4386,7 @@ case we should generate a \code{addi} instruction, unless the
 immediate value is too big to fit in the 12~bit allocated for
 immediate values. Second, both
 arguments may be in memory or immediate, in which case we load them into registers
-\key{a0} and \key{a1}. One might be tempted to perform the addition at
+\key{t0} and \key{t1}. One might be tempted to perform the addition at
 compile time, if both operands are immediate, but that requires a
 correct emulation of the processor's 64-bit addition instruction.
 \fi
@@ -5987,7 +5987,7 @@ this instruction is $\{\ttm{b},\ttm{c}\}$ because it reads from
 variables \code{b} and \code{c}
 (formula~\eqref{eq:live-before-after-minus-writes-plus-reads}):
 \[
-   L_{\mathsf{before}}(5) = (\emptyset - \{\ttm{c}\}) \cup \{ \ttm{b}, \ttm{c} \} = \{ \ttm{b}, \ttm{c} \}
+   L_{\mathsf{before}}(5) = (\emptyset - \{\ttm{b}\}) \cup \{ \ttm{b}, \ttm{c} \} = \{ \ttm{b}, \ttm{c} \}
 \]
 Moving on the the instruction \ifxeightsix{\code{movq \$10,
     b}}\ifriscv{\code{mv b, 10}} at line 4, we copy
@@ -6564,15 +6564,15 @@ correspondence, with \ifxeightsix{$k=11$}\ifriscv{$k=24$}.
 \fi
 \if\architecture\riscvEd
 \begin{lstlisting}
-  0: t0, 1: t1, 2: t2, 3: t3, 4: t4, 5: t5, 6: t6,
-  7: a7, 8: a6, 9: a5, 10: a4, 10: a3, 11: a2, 12: a1,
-  13: s1, 14: s2, 15: s3, 16: s4, 17: s5, 18: s6, 19: s7,
-  20: s8, 21: s9, 22: s10, 23: s11
+  0: t2, 1: t3, 2: t4, 3: t5,
+  4: a7, 5: a6, 6: a5, 7: a4, 8: a3, 9: a2, 10: a1, 11: a0,
+  12: s1, 13: s2, 14: s3, 15: s4, 16: s5, 17: s6, 18: s8, 19: s9, 20: s10,
+  21: s11
 \end{lstlisting}
 \fi
 The integers $k$ and larger correspond to stack locations. The
 registers that are not used for register allocation, such as
-\RAX, are assigned to negative integers. The example assumes the following correspondence.
+\ifxeightsix{\RAX}\ifriscv{\code{t0}}, are assigned to negative integers. The example assumes the following correspondence.
 \if\architecture\xeightysixEd
 \begin{lstlisting}
   -1: rax, -2: rsp, -3: rbp, -4: r11, -5: r15
@@ -6580,7 +6580,7 @@ registers that are not used for register allocation, such as
 \fi
 \if\architecture\riscvEd
 \begin{lstlisting}
-  -1: a0, -2: sp, -3: fp, -4: ra, -5: x3, -6: x4
+  -1: sp, -2: fp, -3: ra, -4: x3, -5: x4, -6: t0, -7: t1
 \end{lstlisting}
 \fi
 
@@ -7244,7 +7244,7 @@ With the coloring complete, we finalize the assignment of variables to
 registers and stack locations. We map the first $k$ colors to the $k$
 registers and the rest of the colors to stack locations.  Suppose for
 the moment that we have just one register to use for register
-allocation, \ifxeightsix{\key{rcx}}\ifriscv{\key{t0}}. Then we have the following assignment.
+allocation, \ifxeightsix{\key{rcx}}\ifriscv{\key{t2}}. Then we have the following assignment.
 \if\architecture\xeightysixEd
 \[
   \{ 0 \mapsto \key{\%rcx}, \; 1 \mapsto \key{-8(\%rbp)}, \; 2 \mapsto \key{-16(\%rbp)} \}
@@ -7281,14 +7281,14 @@ assignment of variables to locations.
 \fi
 \if\architecture\riscvEd
 \begin{gather*}
-  \{ \ttm{v} \mapsto \key{t0},  \,
+  \{ \ttm{v} \mapsto \key{t2},  \,
   \ttm{w} \mapsto \key{-24(fp)}, \,
-  \ttm{x} \mapsto \key{t0}, \,
-  \ttm{y} \mapsto \key{t0}, \\
+  \ttm{x} \mapsto \key{t2}, \,
+  \ttm{y} \mapsto \key{t2}, \\
   \ttm{z} \mapsto \key{-24(fp)}, \,
-  \ttm{tmp\_0} \mapsto \key{t0}, \,
-  \ttm{tmp\_1} \mapsto \key{t0}, \,
-  \ttm{tmp\_2} \mapsto \key{t0} \}
+  \ttm{tmp\_0} \mapsto \key{t2}, \,
+  \ttm{tmp\_1} \mapsto \key{t2}, \,
+  \ttm{tmp\_2} \mapsto \key{t2} \}
 \end{gather*}
 \fi
 \fi}
@@ -7389,15 +7389,15 @@ call print_int
 $\Rightarrow\qquad$
 \begin{minipage}{0.45\textwidth}
 \begin{lstlisting}
-mv   t0, $1
+mv   t2, $1
 mv   -24(fp), $42
-add  t0, t0, 7
-mv   t0, t0
-add  -24(fp), t0, -24(fp)
-mv   t0, t0
-neg  t0, t0
-add  t0, -24(fp), t0
-mv   a0, t0
+add  t2, t2, 7
+mv   t2, t2
+add  -24(fp), t2, -24(fp)
+mv   t2, t2
+neg  t2, t2
+add  t2, -24(fp), t2
+mv   a0, t2
 call print_int
 \end{lstlisting}
 \end{minipage}
@@ -7455,15 +7455,15 @@ same location.
 \fi
 \if\architecture\riscvEd
 In the running example, the instruction
-\code{add -24(fp), t0, -24(fp)} is problematic. Recall from section~\ref{sec:patch-s0}
+\code{add -24(fp), t2, -24(fp)} is problematic. Recall from section~\ref{sec:patch-s0}
 that the suggested fix is to first load \code{-24(fp)} into
-\code{a0} and store \code{a0} into \code{-24(fp)} afterwards.
-The instruction \code{add t0, -24(fp), t0} is similar.
+\code{t0} and store \code{t0} into \code{-24(fp)} afterwards.
+The instruction \code{add t2, -24(fp), t2} is similar.
 %
-The move of \code{1} into \code{t0} becomes an immediate load;
+The move of \code{1} into \code{t2} becomes an immediate load;
 the move of \code{42} into \code{-24(fp)} gets factored into an
-immediate load to \code{a0} and a store into \code{-24(fp)}.
-Furthermore, there are some trivial moves like \code{mv t0, t0}. We
+immediate load to \code{t0} and a store into \code{-24(fp)}.
+Furthermore, there are some trivial moves like \code{mv t2, t2}. We
 recommend deleting all the trivial moves whose source and destination
 are the same location.
 \fi
@@ -7544,32 +7544,32 @@ callq print_int
 {\if\architecture\riscvEd
 \begin{minipage}{0.35\textwidth}
 \begin{lstlisting}
-mv   t0, $1
+mv   t2, $1
 mv   -24(fp), $42
-add  t0, t0, 7
-mv   t0, t0
-add  -24(fp), t0, -24(fp)
-mv   t0, t0
-neg  t0, t0
-add  t0, -24(fp), t0
-mv   a0, t0
+add  t2, t2, 7
+mv   t2, t2
+add  -24(fp), t2, -24(fp)
+mv   t2, t2
+neg  t2, t2
+add  t2, -24(fp), t2
+mv   a0, t2
 call print_int
 \end{lstlisting}
 \end{minipage}
 $\Rightarrow\qquad$
 \begin{minipage}{0.45\textwidth}
 \begin{lstlisting}
-li   t0, 1
-li   a0, 42
-sd   a0, -24(fp)
-addi t0, t0, 7
-ld   a0, -24(fp)
-add  a0, t0, a0
-sd   a0, -24(fp)
-neg  t0, t0
-ld   a0, -24(fp)
-add  t0, a0, t0
-mv   a0, t0
+li   t2, 1
+li   t0, 42
+sd   t0, -24(fp)
+addi t2, t2, 7
+ld   t0, -24(fp)
+add  t0, t2, t0
+sd   t0, -24(fp)
+neg  t2, t2
+ld   t0, -24(fp)
+add  t2, t0, t2
+mv   a0, t2
 call print_int
 \end{lstlisting}
 \end{minipage}
@@ -7808,15 +7808,15 @@ main:
     addi    fp, sp, 32
 
     li      s0, 1
-    li      a0, 42
-    sd      a0, -24(fp)
+    li      t0, 42
+    sd      t0, -24(fp)
     addi    s0, s0, 7
-    ld      a0, -24(fp)
-    add     a0, s0, a0
-    sd      a0, -24(fp)
+    ld      t0, -24(fp)
+    add     t0, s0, t0
+    sd      t0, -24(fp)
     neg     s0, s0
-    ld      a0, -24(fp)
-    add     s0, a0, s0
+    ld      t0, -24(fp)
+    add     s0, t0, s0
     mv      a0, s0
     call    print_int
 
@@ -7909,6 +7909,7 @@ can accomplish this by taking into account which variables appear in
 \fi}
 
 {\if\edition\pythonEd\pythonColor
+{\if\architecture\xeightysixEd
 %
 To motivate the need for move biasing we return to the running example
 and recall that in section~\ref{sec:patch-instructions} we were able to
@@ -7917,10 +7918,11 @@ example. However, we could remove another trivial move if we were able
 to allocate \ifxeightsix{\code{y} and \code{tmp\_0} to the same
   register}\ifriscv{\code{tmp\_2} to register \code{a0}}.
 \fi}
+\fi}
 
 We say that two variables $p$ and $q$ are \emph{move
 related}\index{subject}{move related} if they occur together in
-a \IMOVE{} instruction, that is, \IMOVE~$p$\key{,}~$q$ or
+a move instruction, that is, \IMOVE~$p$\key{,}~$q$ or
 \IMOVE~$q$\key{,}~$p$.
 %
 Recall that we color variables that are more saturated before coloring
@@ -7931,16 +7933,17 @@ the same as the color of a move-related variable.
 %
 Furthermore, when the register allocator chooses a color for a
 variable, it should prefer a color that has already been used for a
-move-related variable if one exists (and assuming that they do not
+move related variable if one exists (and assuming that they do not
 interfere). This preference should not override the preference for
 registers over stack locations. So, this preference should be used as
 a tie breaker in choosing between two registers or in choosing between
 two stack locations.
 
 We represent the move relationships in an undirected graph, the
-\emph{move graph}, with nodes variables and and edges $\{p, q\}$ if
-$p$ and $q$ are move related.  Here is the move graph for our example.
-{\if\edition\racketEd      
+\emph{move graph}, with nodes as variables and edges as $\{p, q\}$ if
+$p$ and $q$ are move related.
+{\if\edition\racketEd
+Here is the move graph for our example.
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
 \node (rax) at (0,0) {$\ttm{rax}$};
@@ -7959,9 +7962,9 @@ $p$ and $q$ are move related.  Here is the move graph for our example.
 \end{tikzpicture}
 \]
 \fi}
-%
 {\if\edition\pythonEd\pythonColor
-  {\if\architecture\xeightysixEd
+{\if\architecture\xeightysixEd
+Here is the move graph for our example.
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
 \node (t0) at (0,2) {$\ttm{tmp\_0}$};
@@ -7981,26 +7984,65 @@ $p$ and $q$ are move related.  Here is the move graph for our example.
 \]
 \fi}
 {\if\architecture\riscvEd
+Let us look at a toy example for which move related tie breaking makes a difference.
+On the left is the example and on the right is the output after the \code{select\_instructions} pass.
+\begin{center}
+\begin{minipage}{0.35\textwidth}
+\begin{lstlisting}
+v = 0
+w = v
+x = v + w
+y = v - w
+v = w + x
+print(v)
+\end{lstlisting}
+\end{minipage}
+${\Rightarrow\qquad}$
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}
+mv v, 0
+mv w, v
+add x, v, w
+sub y, v, w
+add v, w, x
+mv a0, v
+call print_int
+\end{lstlisting}
+\end{minipage}
+\end{center}
+Afterwards we can compute the corresponding move graph and inteference graph.
+On the left is the move graph and on the right is the interference graph.
+\begin{center}
+\begin{minipage}{0.40\textwidth}
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
-\node (t0) at (0,2) {$\ttm{tmp\_0}$};
-\node (t1) at (0,0) {$\ttm{tmp\_1}$};
-\node (t2) at (9,2) {$\ttm{tmp\_2}$};
-% \node (a0) at (12,2) {$\ttm{a0}$};
-\node (z) at (3,2)  {$\ttm{z}$};
-\node (x) at (6,2)  {$\ttm{x}$};
-\node (y) at (3,0)  {$\ttm{y}$};
-\node (w) at (6,0)  {$\ttm{w}$};
-\node (v) at (9,0)  {$\ttm{v}$};
-
-\draw (y) to (x);
-\draw (t0) to (y);
-% \draw (a0) to (t2);
+  \node (v) at (0,2) {$\ttm{v}$};
+  \node (w) at (3,2)  {$\ttm{w}$};
+  \node (x) at (0,0) {$\ttm{x}$};
+  \node (y) at (3,0)  {$\ttm{y}$};
+  
+  \draw (v) to (w);
 \end{tikzpicture}
 \]
+\end{minipage}
+\begin{minipage}{0.40\textwidth}
+\[
+\begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
+  \node (v) at (0,2) {$\ttm{v}$};
+  \node (w) at (3,2)  {$\ttm{w}$};
+  \node (x) at (0,0) {$\ttm{x}$};
+  \node (y) at (3,0)  {$\ttm{y}$};
+  
+  \draw (y) to (x);
+  \draw (v) to (x);
+  \draw (x) to (w);
+  \draw (w) to (y);
+\end{tikzpicture}
+\]
+\end{minipage}
+\end{center}
 \fi}
 \fi}
-
 {\if\edition\racketEd
 Now we replay the graph coloring, pausing to see the coloring of
 \code{y}. Recall the following configuration. The most saturated vertices
@@ -8129,7 +8171,7 @@ At this point, vertices \code{x} and \code{v} are most saturated, but
 \fi}
 %
 {\if\edition\pythonEd\pythonColor
-  {\if\architecture\xeightysixEd
+{\if\architecture\xeightysixEd
 Now we replay the graph coloring, pausing before the coloring of
 \code{w}. Recall the following configuration. The most saturated vertices
 were \code{tmp\_1}, \code{w}, and \code{y}.
@@ -8219,100 +8261,83 @@ To finish the coloring, \code{x} and \code{v} get $0$ and
 \]
 \fi}
 {\if\architecture\riscvEd
-  \textbf{CONSTRUCTION---TDB: develop new example for RISC-V. Move
-    biasing has no influence on this example.}
-  
-Now we replay the graph coloring, pausing before the coloring of
-\code{w}. Recall the following configuration. The most saturated vertices
-were \code{tmp\_1}, \code{w}, and \code{y}.
+{\iffalse
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
-\node (t0) at (0,2) {$\ttm{tmp\_0}: 0, \{1\}$};
-\node (t1) at (0,0) {$\ttm{tmp\_1}: -, \{0\}$};
-\node (z) at (3,2)  {$\ttm{z}: 1, \{0\}$};
-\node (x) at (6,2)  {$\ttm{x}: -, \{\}$};
-\node (y) at (3,0)  {$\ttm{y}: -, \{1\}$};
-\node (w) at (6,0)  {$\ttm{w}: -, \{1\}$};
-\node (v) at (9,0)  {$\ttm{v}: -, \{\}$};
-
-\draw (t0) to (t1);
-\draw (t0) to (z);
-\draw (z) to (y);
-\draw (z) to (w);
-\draw (x) to (w);
-\draw (y) to (w);
-\draw (v) to (w);
+  \node (v) at (0,2) {$\ttm{v}: -, \{\}$};
+  \node (w) at (3,2)  {$\ttm{w}: -, \{\}$};
+  \node (x) at (0,0) {$\ttm{x}: -, \{\}$};
+  \node (y) at (3,0)  {$\ttm{y}: -, \{\}$};
+   
+  \draw (y) to (x);
+  \draw (v) to (x);
+  \draw (x) to (w);
+  \draw (w) to (y);
 \end{tikzpicture}
 \]
-We have arbitrarily chosen to color \code{w} instead of \code{tmp\_1}
-or \code{y}. Note, however, that \code{w} is not move related to any
-variables, whereas \code{y} and \code{tmp\_1} are move related to
-\code{tmp\_0} and \code{z}, respectively. If we instead choose
-\code{y} and color it $0$, we can delete another move instruction.
+\fi}
+Let us now color the interference graph using move related tie breaking.
+At the beginning, all variables are equally saturated so we randomly start by coloring \code{v} with $0$.
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
-\node (t0) at (0,2) {$\ttm{tmp\_0}: 0, \{1\}$};
-\node (t1) at (0,0) {$\ttm{tmp\_1}: -, \{0\}$};
-\node (z) at (3,2)  {$\ttm{z}: 1, \{0\}$};
-\node (x) at (6,2)  {$\ttm{x}: -, \{\}$};
-\node (y) at (3,0)  {$\ttm{y}: 0, \{1\}$};
-\node (w) at (6,0)  {$\ttm{w}: -, \{0,1\}$};
-\node (v) at (9,0)  {$\ttm{v}: -, \{\}$};
-
-\draw (t0) to (t1);
-\draw (t0) to (z);
-\draw (z) to (y);
-\draw (z) to (w);
-\draw (x) to (w);
-\draw (y) to (w);
-\draw (v) to (w);
+  \node (v) at (0,2) {$\ttm{v}: 0, \{\}$};
+  \node (w) at (3,2)  {$\ttm{w}: -, \{\}$};
+  \node (x) at (0,0) {$\ttm{x}: -, \{0\}$};
+  \node (y) at (3,0)  {$\ttm{y}: -, \{\}$};
+   
+  \draw (y) to (x);
+  \draw (v) to (x);
+  \draw (x) to (w);
+  \draw (w) to (y);
 \end{tikzpicture}
 \]
-Now \code{w} is the most saturated, so we color it $2$.
+Now \code{x} is the most saturated, so we color it $1$.
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
-\node (t0) at (0,2) {$\ttm{tmp\_0}: 0, \{1\}$};
-\node (t1) at (0,0) {$\ttm{tmp\_1}: -, \{0\}$};
-\node (z) at (3,2)  {$\ttm{z}: 1, \{0\}$};
-\node (x) at (6,2)  {$\ttm{x}: -, \{2\}$};
-\node (y) at (3,0)  {$\ttm{y}: 0, \{1,2\}$};
-\node (w) at (6,0)  {$\ttm{w}: 2, \{0,1\}$};
-\node (v) at (9,0)  {$\ttm{v}: -, \{2\}$};
-
-\draw (t0) to (t1);
-\draw (t0) to (z);
-\draw (z) to (y);
-\draw (z) to (w);
-\draw (x) to (w);
-\draw (y) to (w);
-\draw (v) to (w);
+  \node (v) at (0,2) {$\ttm{v}: 0, \{1\}$};
+  \node (w) at (3,2)  {$\ttm{w}: -, \{1\}$};
+  \node (x) at (0,0) {$\ttm{x}: 1, \{0\}$};
+  \node (y) at (3,0)  {$\ttm{y}: -, \{1\}$};
+   
+  \draw (y) to (x);
+  \draw (v) to (x);
+  \draw (x) to (w);
+  \draw (w) to (y);
 \end{tikzpicture}
 \]
-To finish the coloring, \code{x} and \code{v} get $0$ and
-\code{tmp\_1} gets $1$.
+Now \code{w} and \code{y} are the most saturated.
+We choose to color \code{w} with $0$, because \code{w} is move related to the already $0$-colored variable \code{v}.
 \[
 \begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
-\node (t0) at (0,2) {$\ttm{tmp\_0}: 0, \{1\}$};
-\node (t1) at (0,0) {$\ttm{tmp\_1}: 1, \{0\}$};
-\node (z) at (3,2)  {$\ttm{z}: 1, \{0\}$};
-\node (x) at (6,2)  {$\ttm{x}: 0, \{2\}$};
-\node (y) at (3,0)  {$\ttm{y}: 0, \{1,2\}$};
-\node (w) at (6,0)  {$\ttm{w}: 2, \{0,1\}$};
-\node (v) at (9,0)  {$\ttm{v}: 0, \{2\}$};
-
-\draw (t0) to (t1);
-\draw (t0) to (z);
-\draw (z) to (y);
-\draw (z) to (w);
-\draw (x) to (w);
-\draw (y) to (w);
-\draw (v) to (w);
+  \node (v) at (0,2) {$\ttm{v}: 0, \{1\}$};
+  \node (w) at (3,2)  {$\ttm{w}: 0, \{1\}$};
+  \node (x) at (0,0) {$\ttm{x}: 1, \{0\}$};
+  \node (y) at (3,0)  {$\ttm{y}: -, \{0, 1\}$};
+   
+  \draw (y) to (x);
+  \draw (v) to (x);
+  \draw (x) to (w);
+  \draw (w) to (y);
+\end{tikzpicture}
+\]
+Finally, only \code{y} is left uncolored, so we color it with $2$.
+\[
+\begin{tikzpicture}[baseline=(current  bounding  box.center),scale=0.9]
+  \node (v) at (0,2) {$\ttm{v}: 0, \{1\}$};
+  \node (w) at (3,2)  {$\ttm{w}: 0, \{1, 2\}$};
+  \node (x) at (0,0) {$\ttm{x}: 1, \{0, 2\}$};
+  \node (y) at (3,0)  {$\ttm{y}: 2, \{0, 1\}$};
+   
+  \draw (y) to (x);
+  \draw (v) to (x);
+  \draw (x) to (w);
+  \draw (w) to (y);
 \end{tikzpicture}
 \]
 \fi}
 \fi}
 
-So, we have the following assignment of variables to registers.
+We get the following assignment of variables to registers.
 {\if\edition\racketEd
 \begin{gather*}
   \{ \ttm{v} \mapsto \key{\%rcx}, \,
@@ -8324,6 +8349,7 @@ So, we have the following assignment of variables to registers.
 \end{gather*}
 \fi}
 {\if\edition\pythonEd\pythonColor
+{\if\architecture\xeightysixEd
 \begin{gather*}
   \{ \ttm{v} \mapsto \key{\%rcx}, \,
      \ttm{w} \mapsto \key{-16(\%rbp)}, \,
@@ -8334,13 +8360,21 @@ So, we have the following assignment of variables to registers.
      \ttm{tmp\_1} \mapsto \key{-8(\%rbp)} \}
 \end{gather*}
 \fi}
-%
+{\if\architecture\riscvEd
+\begin{gather*}
+  \{ \ttm{v} \mapsto \key{t2}, \,
+     \ttm{w} \mapsto \key{t2}, \,
+     \ttm{x} \mapsto \key{t3}, \,
+     \ttm{y} \mapsto \key{t4}
+  \}
+\end{gather*}
+\fi}
+\fi}
+{\if\edition\racketEd
 We apply this register assignment to the running example shown next,
 on the left, to obtain the code in the middle.  The
 \code{patch\_instructions} then deletes the trivial moves to obtain
 the code on the right.
-
-{\if\edition\racketEd
 \begin{center}  
 \begin{minipage}{0.2\textwidth}
 \begin{lstlisting}
@@ -8391,8 +8425,12 @@ jmp conclusion
 \end{minipage}
 \end{center}
 \fi}
-
 {\if\edition\pythonEd\pythonColor
+{\if\architecture\xeightysixEd
+We apply this register assignment to the running example shown next,
+on the left, to obtain the code in the middle.  The
+\code{patch\_instructions} pass then deletes the trivial moves to obtain
+the code on the right.
 \begin{center}
 \begin{minipage}{0.20\textwidth}
 \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
@@ -8445,6 +8483,51 @@ callq print_int
 \end{lstlisting}
 \end{minipage}
 \end{center}
+\fi}
+{\if\architecture\riscvEd
+We apply this register assignment to the toy example shown next,
+on the left, to obtain the code in the middle. The
+\code{patch\_instructions} then deletes the trivial \code{mv t0 t0} to obtain
+the code on the right.
+\begin{center}
+\begin{minipage}{0.20\textwidth}
+\begin{lstlisting}
+mv v, 0
+mv w, v
+add x, v, w
+sub y, v, w
+add v, w, x
+mv a0, v
+call print_int
+\end{lstlisting}
+\end{minipage}
+${\Rightarrow\qquad}$
+\begin{minipage}{0.20\textwidth}
+\begin{lstlisting}
+mv t2, 0
+mv t2, t2
+add t3, t2, t2
+sub t4, t2, t2
+add t2, t2, t3
+mv a0, t2
+call print_int
+\end{lstlisting}
+\end{minipage}
+${\Rightarrow\qquad}$
+\begin{minipage}{0.20\textwidth}
+\begin{lstlisting}
+mv t2, 0
+add t3, t2, t2
+sub t4, t2, t2
+add t2, t2, t3
+mv a0, t2
+call print_int
+\end{lstlisting}
+\end{minipage}
+\end{center}
+\fi}
+Without the move related tie breaking which chose \code{w} over \code{y}, \code{w} and \code{v} could have
+ended up in different registers, thus move related tie breaking was worth the extra effort.
 \fi}
 
 \begin{exercise}\normalfont\normalsize
